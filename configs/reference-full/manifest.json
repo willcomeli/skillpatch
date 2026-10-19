@@ -1,0 +1,799 @@
+{
+  "task_count": 87,
+  "scope": "All 87 local original SkillsBench tasks with task.md",
+  "source_root": "/home/lihanlun123/workspace/dataset/skillsbench/tasks",
+  "harness": "openhands",
+  "model": "deepseek/deepseek-flash",
+  "condition": "reference-explicit",
+  "concurrency": 4,
+  "repetitions": 1,
+  "automatic_retries": 0,
+  "live_stage1": false,
+  "outer_timeout_policy": "ceil(native agent timeout + native verifier timeout + 1800s sandbox setup allowance + 600s startup/cleanup allowance); native task.md is not modified",
+  "preflight": "Configuration and reference-prompt checks passed for all tasks; no task execution or model calls started",
+  "tasks": [
+    {
+      "task": "3d-scan-calc",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/3d-scan-calc.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/3d-scan-calc",
+      "skill_count": 1,
+      "native_agent_timeout_sec": 900.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 4200
+    },
+    {
+      "task": "ada-bathroom-plan-repair",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/ada-bathroom-plan-repair.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/ada-bathroom-plan-repair",
+      "skill_count": 3,
+      "native_agent_timeout_sec": 2400.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 5700
+    },
+    {
+      "task": "adaptive-cruise-control",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/adaptive-cruise-control.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/adaptive-cruise-control",
+      "skill_count": 5,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 1800.0,
+      "outer_timeout_sec": 6000
+    },
+    {
+      "task": "azure-bgp-oscillation-route-leak",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/azure-bgp-oscillation-route-leak.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/azure-bgp-oscillation-route-leak",
+      "skill_count": 1,
+      "native_agent_timeout_sec": 3600.0,
+      "native_verifier_timeout_sec": 240.0,
+      "outer_timeout_sec": 6240
+    },
+    {
+      "task": "bike-rebalance",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/bike-rebalance.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/bike-rebalance",
+      "skill_count": 4,
+      "native_agent_timeout_sec": 900.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 4200
+    },
+    {
+      "task": "citation-check",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/citation-check.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/citation-check",
+      "skill_count": 1,
+      "native_agent_timeout_sec": 900.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 4200
+    },
+    {
+      "task": "civ6-adjacency-optimizer",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/civ6-adjacency-optimizer.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/civ6-adjacency-optimizer",
+      "skill_count": 4,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 5100
+    },
+    {
+      "task": "court-form-filling",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/court-form-filling.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/court-form-filling",
+      "skill_count": 1,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 600.0,
+      "outer_timeout_sec": 4800
+    },
+    {
+      "task": "crystallographic-wyckoff-position-analysis",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/crystallographic-wyckoff-position-analysis.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/crystallographic-wyckoff-position-analysis",
+      "skill_count": 2,
+      "native_agent_timeout_sec": 900.0,
+      "native_verifier_timeout_sec": 240.0,
+      "outer_timeout_sec": 3540
+    },
+    {
+      "task": "dapt-intrusion-detection",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/dapt-intrusion-detection.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/dapt-intrusion-detection",
+      "skill_count": 2,
+      "native_agent_timeout_sec": 600.0,
+      "native_verifier_timeout_sec": 600.0,
+      "outer_timeout_sec": 3600
+    },
+    {
+      "task": "data-to-d3",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/data-to-d3.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/data-to-d3",
+      "skill_count": 1,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 240.0,
+      "outer_timeout_sec": 4440
+    },
+    {
+      "task": "debug-trl-grpo",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/debug-trl-grpo.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/debug-trl-grpo",
+      "skill_count": 3,
+      "native_agent_timeout_sec": 3600.0,
+      "native_verifier_timeout_sec": 120.0,
+      "outer_timeout_sec": 6120
+    },
+    {
+      "task": "dialogue-parser",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/dialogue-parser.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/dialogue-parser",
+      "skill_count": 1,
+      "native_agent_timeout_sec": 900.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 4200
+    },
+    {
+      "task": "drone-planning-control",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/drone-planning-control.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/drone-planning-control",
+      "skill_count": 6,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 600.0,
+      "outer_timeout_sec": 4800
+    },
+    {
+      "task": "dynamic-object-aware-egomotion",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/dynamic-object-aware-egomotion.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/dynamic-object-aware-egomotion",
+      "skill_count": 4,
+      "native_agent_timeout_sec": 1200.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 4500
+    },
+    {
+      "task": "earthquake-phase-association",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/earthquake-phase-association.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/earthquake-phase-association",
+      "skill_count": 4,
+      "native_agent_timeout_sec": 3600.0,
+      "native_verifier_timeout_sec": 240.0,
+      "outer_timeout_sec": 6240
+    },
+    {
+      "task": "earthquake-plate-calculation",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/earthquake-plate-calculation.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/earthquake-plate-calculation",
+      "skill_count": 1,
+      "native_agent_timeout_sec": 900.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 4200
+    },
+    {
+      "task": "econ-detrending-correlation",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/econ-detrending-correlation.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/econ-detrending-correlation",
+      "skill_count": 1,
+      "native_agent_timeout_sec": 900.0,
+      "native_verifier_timeout_sec": 240.0,
+      "outer_timeout_sec": 3540
+    },
+    {
+      "task": "edit-pdf",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/edit-pdf.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/edit-pdf",
+      "skill_count": 2,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 5100
+    },
+    {
+      "task": "energy-ac-optimal-power-flow",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/energy-ac-optimal-power-flow.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/energy-ac-optimal-power-flow",
+      "skill_count": 3,
+      "native_agent_timeout_sec": 3600.0,
+      "native_verifier_timeout_sec": 240.0,
+      "outer_timeout_sec": 6240
+    },
+    {
+      "task": "energy-market-pricing",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/energy-market-pricing.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/energy-market-pricing",
+      "skill_count": 4,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 5100
+    },
+    {
+      "task": "energy-unit-commitment",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/energy-unit-commitment.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/energy-unit-commitment",
+      "skill_count": 3,
+      "native_agent_timeout_sec": 900.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 4200
+    },
+    {
+      "task": "enterprise-information-search",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/enterprise-information-search.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/enterprise-information-search",
+      "skill_count": 1,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 600.0,
+      "outer_timeout_sec": 4800
+    },
+    {
+      "task": "exam-block-sequencing",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/exam-block-sequencing.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/exam-block-sequencing",
+      "skill_count": 2,
+      "native_agent_timeout_sec": 1500.0,
+      "native_verifier_timeout_sec": 600.0,
+      "outer_timeout_sec": 4500
+    },
+    {
+      "task": "exceltable-in-ppt",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/exceltable-in-ppt.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/exceltable-in-ppt",
+      "skill_count": 2,
+      "native_agent_timeout_sec": 900.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 4200
+    },
+    {
+      "task": "exoplanet-detection-period",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/exoplanet-detection-period.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/exoplanet-detection-period",
+      "skill_count": 5,
+      "native_agent_timeout_sec": 3600.0,
+      "native_verifier_timeout_sec": 240.0,
+      "outer_timeout_sec": 6240
+    },
+    {
+      "task": "financial-modeling-qa",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/financial-modeling-qa.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/financial-modeling-qa",
+      "skill_count": 2,
+      "native_agent_timeout_sec": 600.0,
+      "native_verifier_timeout_sec": 600.0,
+      "outer_timeout_sec": 3600
+    },
+    {
+      "task": "fix-build-agentops",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/fix-build-agentops.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/fix-build-agentops",
+      "skill_count": 4,
+      "native_agent_timeout_sec": 7200.0,
+      "native_verifier_timeout_sec": 240.0,
+      "outer_timeout_sec": 9840
+    },
+    {
+      "task": "fix-build-google-auto",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/fix-build-google-auto.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/fix-build-google-auto",
+      "skill_count": 3,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 5100
+    },
+    {
+      "task": "fix-druid-loophole-cve",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/fix-druid-loophole-cve.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/fix-druid-loophole-cve",
+      "skill_count": 2,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 1800.0,
+      "outer_timeout_sec": 6000
+    },
+    {
+      "task": "fix-erlang-ssh-cve",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/fix-erlang-ssh-cve.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/fix-erlang-ssh-cve",
+      "skill_count": 6,
+      "native_agent_timeout_sec": 600.0,
+      "native_verifier_timeout_sec": 1200.0,
+      "outer_timeout_sec": 4200
+    },
+    {
+      "task": "fix-visual-stability",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/fix-visual-stability.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/fix-visual-stability",
+      "skill_count": 3,
+      "native_agent_timeout_sec": 3000.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 6300
+    },
+    {
+      "task": "flink-query",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/flink-query.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/flink-query",
+      "skill_count": 2,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 600.0,
+      "outer_timeout_sec": 4800
+    },
+    {
+      "task": "flood-risk-analysis",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/flood-risk-analysis.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/flood-risk-analysis",
+      "skill_count": 3,
+      "native_agent_timeout_sec": 7200.0,
+      "native_verifier_timeout_sec": 240.0,
+      "outer_timeout_sec": 9840
+    },
+    {
+      "task": "glm-lake-mendota",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/glm-lake-mendota.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/glm-lake-mendota",
+      "skill_count": 3,
+      "native_agent_timeout_sec": 3600.0,
+      "native_verifier_timeout_sec": 600.0,
+      "outer_timeout_sec": 6600
+    },
+    {
+      "task": "gravitational-wave-detection",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/gravitational-wave-detection.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/gravitational-wave-detection",
+      "skill_count": 2,
+      "native_agent_timeout_sec": 3600.0,
+      "native_verifier_timeout_sec": 240.0,
+      "outer_timeout_sec": 6240
+    },
+    {
+      "task": "grid-dispatch-operator",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/grid-dispatch-operator.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/grid-dispatch-operator",
+      "skill_count": 3,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 600.0,
+      "outer_timeout_sec": 4800
+    },
+    {
+      "task": "hvac-control",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/hvac-control.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/hvac-control",
+      "skill_count": 5,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 1800.0,
+      "outer_timeout_sec": 6000
+    },
+    {
+      "task": "invoice-fraud-detection",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/invoice-fraud-detection.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/invoice-fraud-detection",
+      "skill_count": 3,
+      "native_agent_timeout_sec": 900.0,
+      "native_verifier_timeout_sec": 240.0,
+      "outer_timeout_sec": 3540
+    },
+    {
+      "task": "jax-computing-basics",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/jax-computing-basics.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/jax-computing-basics",
+      "skill_count": 1,
+      "native_agent_timeout_sec": 600.0,
+      "native_verifier_timeout_sec": 600.0,
+      "outer_timeout_sec": 3600
+    },
+    {
+      "task": "jpg-ocr-stat",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/jpg-ocr-stat.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/jpg-ocr-stat",
+      "skill_count": 5,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 600.0,
+      "outer_timeout_sec": 4800
+    },
+    {
+      "task": "lab-unit-harmonization",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/lab-unit-harmonization.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/lab-unit-harmonization",
+      "skill_count": 1,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 1800.0,
+      "outer_timeout_sec": 6000
+    },
+    {
+      "task": "lake-warming-attribution",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/lake-warming-attribution.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/lake-warming-attribution",
+      "skill_count": 4,
+      "native_agent_timeout_sec": 300.0,
+      "native_verifier_timeout_sec": 300.0,
+      "outer_timeout_sec": 3000
+    },
+    {
+      "task": "latex-formula-extraction",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/latex-formula-extraction.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/latex-formula-extraction",
+      "skill_count": 2,
+      "native_agent_timeout_sec": 3600.0,
+      "native_verifier_timeout_sec": 240.0,
+      "outer_timeout_sec": 6240
+    },
+    {
+      "task": "lean4-proof",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/lean4-proof.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/lean4-proof",
+      "skill_count": 2,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 600.0,
+      "outer_timeout_sec": 4800
+    },
+    {
+      "task": "llm-prefix-cache-replay",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/llm-prefix-cache-replay.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/llm-prefix-cache-replay",
+      "skill_count": 2,
+      "native_agent_timeout_sec": 900.0,
+      "native_verifier_timeout_sec": 300.0,
+      "outer_timeout_sec": 3600
+    },
+    {
+      "task": "manufacturing-codebook-normalization",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/manufacturing-codebook-normalization.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/manufacturing-codebook-normalization",
+      "skill_count": 1,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 300.0,
+      "outer_timeout_sec": 4500
+    },
+    {
+      "task": "manufacturing-equipment-maintenance",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/manufacturing-equipment-maintenance.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/manufacturing-equipment-maintenance",
+      "skill_count": 2,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 300.0,
+      "outer_timeout_sec": 4500
+    },
+    {
+      "task": "manufacturing-fjsp-optimization",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/manufacturing-fjsp-optimization.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/manufacturing-fjsp-optimization",
+      "skill_count": 1,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 450.0,
+      "outer_timeout_sec": 4650
+    },
+    {
+      "task": "mario-coin-counting",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/mario-coin-counting.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/mario-coin-counting",
+      "skill_count": 3,
+      "native_agent_timeout_sec": 900.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 4200
+    },
+    {
+      "task": "mars-clouds-clustering",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/mars-clouds-clustering.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/mars-clouds-clustering",
+      "skill_count": 3,
+      "native_agent_timeout_sec": 3600.0,
+      "native_verifier_timeout_sec": 1800.0,
+      "outer_timeout_sec": 7800
+    },
+    {
+      "task": "multilingual-video-dubbing",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/multilingual-video-dubbing.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/multilingual-video-dubbing",
+      "skill_count": 6,
+      "native_agent_timeout_sec": 2700.0,
+      "native_verifier_timeout_sec": 1350.0,
+      "outer_timeout_sec": 6450
+    },
+    {
+      "task": "offer-letter-generator",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/offer-letter-generator.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/offer-letter-generator",
+      "skill_count": 1,
+      "native_agent_timeout_sec": 900.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 4200
+    },
+    {
+      "task": "organize-messy-files",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/organize-messy-files.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/organize-messy-files",
+      "skill_count": 5,
+      "native_agent_timeout_sec": 900.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 4200
+    },
+    {
+      "task": "paper-anonymizer",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/paper-anonymizer.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/paper-anonymizer",
+      "skill_count": 2,
+      "native_agent_timeout_sec": 1000.0,
+      "native_verifier_timeout_sec": 300.0,
+      "outer_timeout_sec": 3700
+    },
+    {
+      "task": "parallel-tfidf-search",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/parallel-tfidf-search.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/parallel-tfidf-search",
+      "skill_count": 3,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 5100
+    },
+    {
+      "task": "paratransit-routing",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/paratransit-routing.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/paratransit-routing",
+      "skill_count": 2,
+      "native_agent_timeout_sec": 900.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 4200
+    },
+    {
+      "task": "pddl-airport-planning",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/pddl-airport-planning.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/pddl-airport-planning",
+      "skill_count": 1,
+      "native_agent_timeout_sec": 600.0,
+      "native_verifier_timeout_sec": 600.0,
+      "outer_timeout_sec": 3600
+    },
+    {
+      "task": "pddl-tpp-planning",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/pddl-tpp-planning.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/pddl-tpp-planning",
+      "skill_count": 1,
+      "native_agent_timeout_sec": 600.0,
+      "native_verifier_timeout_sec": 600.0,
+      "outer_timeout_sec": 3600
+    },
+    {
+      "task": "pdf-excel-diff",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/pdf-excel-diff.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/pdf-excel-diff",
+      "skill_count": 2,
+      "native_agent_timeout_sec": 3600.0,
+      "native_verifier_timeout_sec": 240.0,
+      "outer_timeout_sec": 6240
+    },
+    {
+      "task": "powerlifting-coef-calc",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/powerlifting-coef-calc.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/powerlifting-coef-calc",
+      "skill_count": 3,
+      "native_agent_timeout_sec": 600.0,
+      "native_verifier_timeout_sec": 600.0,
+      "outer_timeout_sec": 3600
+    },
+    {
+      "task": "pptx-reference-formatting",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/pptx-reference-formatting.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/pptx-reference-formatting",
+      "skill_count": 1,
+      "native_agent_timeout_sec": 900.0,
+      "native_verifier_timeout_sec": 600.0,
+      "outer_timeout_sec": 3900
+    },
+    {
+      "task": "protein-expression-analysis",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/protein-expression-analysis.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/protein-expression-analysis",
+      "skill_count": 1,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 1800.0,
+      "outer_timeout_sec": 6000
+    },
+    {
+      "task": "python-scala-translation",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/python-scala-translation.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/python-scala-translation",
+      "skill_count": 6,
+      "native_agent_timeout_sec": 600.0,
+      "native_verifier_timeout_sec": 600.0,
+      "outer_timeout_sec": 3600
+    },
+    {
+      "task": "quantum-numerical-simulation",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/quantum-numerical-simulation.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/quantum-numerical-simulation",
+      "skill_count": 1,
+      "native_agent_timeout_sec": 7200.0,
+      "native_verifier_timeout_sec": 1800.0,
+      "outer_timeout_sec": 11400
+    },
+    {
+      "task": "r2r-mpc-control",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/r2r-mpc-control.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/r2r-mpc-control",
+      "skill_count": 4,
+      "native_agent_timeout_sec": 1200.0,
+      "native_verifier_timeout_sec": 1200.0,
+      "outer_timeout_sec": 4800
+    },
+    {
+      "task": "radar-vital-signs",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/radar-vital-signs.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/radar-vital-signs",
+      "skill_count": 3,
+      "native_agent_timeout_sec": 1200.0,
+      "native_verifier_timeout_sec": 600.0,
+      "outer_timeout_sec": 4200
+    },
+    {
+      "task": "react-performance-debugging",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/react-performance-debugging.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/react-performance-debugging",
+      "skill_count": 2,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 400.0,
+      "outer_timeout_sec": 4600
+    },
+    {
+      "task": "reserves-at-risk-calc",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/reserves-at-risk-calc.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/reserves-at-risk-calc",
+      "skill_count": 1,
+      "native_agent_timeout_sec": 600.0,
+      "native_verifier_timeout_sec": 600.0,
+      "outer_timeout_sec": 3600
+    },
+    {
+      "task": "sales-pivot-analysis",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/sales-pivot-analysis.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/sales-pivot-analysis",
+      "skill_count": 2,
+      "native_agent_timeout_sec": 900.0,
+      "native_verifier_timeout_sec": 300.0,
+      "outer_timeout_sec": 3600
+    },
+    {
+      "task": "sec-financial-report",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/sec-financial-report.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/sec-financial-report",
+      "skill_count": 2,
+      "native_agent_timeout_sec": 900.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 4200
+    },
+    {
+      "task": "seismic-phase-picking",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/seismic-phase-picking.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/seismic-phase-picking",
+      "skill_count": 4,
+      "native_agent_timeout_sec": 3600.0,
+      "native_verifier_timeout_sec": 240.0,
+      "outer_timeout_sec": 6240
+    },
+    {
+      "task": "setup-fuzzing-py",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/setup-fuzzing-py.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/setup-fuzzing-py",
+      "skill_count": 3,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 600.0,
+      "outer_timeout_sec": 4800
+    },
+    {
+      "task": "shock-analysis-demand",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/shock-analysis-demand.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/shock-analysis-demand",
+      "skill_count": 1,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 240.0,
+      "outer_timeout_sec": 4440
+    },
+    {
+      "task": "shock-analysis-supply",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/shock-analysis-supply.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/shock-analysis-supply",
+      "skill_count": 1,
+      "native_agent_timeout_sec": 2700.0,
+      "native_verifier_timeout_sec": 1350.0,
+      "outer_timeout_sec": 6450
+    },
+    {
+      "task": "simpo-code-reproduction",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/simpo-code-reproduction.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/simpo-code-reproduction",
+      "skill_count": 2,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 5100
+    },
+    {
+      "task": "software-dependency-audit",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/software-dependency-audit.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/software-dependency-audit",
+      "skill_count": 3,
+      "native_agent_timeout_sec": 900.0,
+      "native_verifier_timeout_sec": 240.0,
+      "outer_timeout_sec": 3540
+    },
+    {
+      "task": "spring-boot-jakarta-migration",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/spring-boot-jakarta-migration.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/spring-boot-jakarta-migration",
+      "skill_count": 5,
+      "native_agent_timeout_sec": 900.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 4200
+    },
+    {
+      "task": "suricata-custom-exfil",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/suricata-custom-exfil.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/suricata-custom-exfil",
+      "skill_count": 3,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 5100
+    },
+    {
+      "task": "syzkaller-ppdev-syzlang",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/syzkaller-ppdev-syzlang.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/syzkaller-ppdev-syzlang",
+      "skill_count": 3,
+      "native_agent_timeout_sec": 1400.0,
+      "native_verifier_timeout_sec": 1200.0,
+      "outer_timeout_sec": 5000
+    },
+    {
+      "task": "threejs-structure-parser",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/threejs-structure-parser.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/threejs-structure-parser",
+      "skill_count": 2,
+      "native_agent_timeout_sec": 600.0,
+      "native_verifier_timeout_sec": 300.0,
+      "outer_timeout_sec": 3300
+    },
+    {
+      "task": "threejs-to-obj",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/threejs-to-obj.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/threejs-to-obj",
+      "skill_count": 2,
+      "native_agent_timeout_sec": 300.0,
+      "native_verifier_timeout_sec": 300.0,
+      "outer_timeout_sec": 3000
+    },
+    {
+      "task": "tictoc-unnecessary-abort-detection",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/tictoc-unnecessary-abort-detection.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/tictoc-unnecessary-abort-detection",
+      "skill_count": 3,
+      "native_agent_timeout_sec": 1800.0,
+      "native_verifier_timeout_sec": 600.0,
+      "outer_timeout_sec": 4800
+    },
+    {
+      "task": "travel-planning",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/travel-planning.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/travel-planning",
+      "skill_count": 6,
+      "native_agent_timeout_sec": 600.0,
+      "native_verifier_timeout_sec": 300.0,
+      "outer_timeout_sec": 3300
+    },
+    {
+      "task": "video-silence-remover",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/video-silence-remover.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/video-silence-remover",
+      "skill_count": 7,
+      "native_agent_timeout_sec": 3600.0,
+      "native_verifier_timeout_sec": 240.0,
+      "outer_timeout_sec": 6240
+    },
+    {
+      "task": "weighted-gdp-calc",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/weighted-gdp-calc.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/weighted-gdp-calc",
+      "skill_count": 1,
+      "native_agent_timeout_sec": 900.0,
+      "native_verifier_timeout_sec": 900.0,
+      "outer_timeout_sec": 4200
+    },
+    {
+      "task": "xlsx-recover-data",
+      "config": "/home/lihanlun123/skillpatch/configs/reference-full/xlsx-recover-data.toml",
+      "source_task": "/home/lihanlun123/workspace/dataset/skillsbench/tasks/xlsx-recover-data",
+      "skill_count": 2,
+      "native_agent_timeout_sec": 600.0,
+      "native_verifier_timeout_sec": 600.0,
+      "outer_timeout_sec": 3600
+    }
+  ]
+}

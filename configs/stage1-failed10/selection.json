@@ -1,0 +1,103 @@
+{
+  "historical_job": "/home/lihanlun123/workspace/Referenceskill/jobs/openhands-reference-skills-complete-deepseek-v4-flash/2026-09-16__21-15-30",
+  "selection": "Purposive sample of 10 scored failures with no recorded runner/verifier error, spanning task types; not a random or representative sample.",
+  "concurrency": 4,
+  "fresh_model": "deepseek/deepseek-flash",
+  "fresh_condition": "original SkillsBench task + OpenHands reference prompt augmenter",
+  "diagnosis_policy": "skip explicit scored success; otherwise attempt live Stage1",
+  "historical_trajectories_used_as_stage1_input": false,
+  "executions_started": false,
+  "validation": "Loaded all configs and diagnosis config; checked required task files and generated reference prompts read-only. No Docker or model call.",
+  "tasks": [
+    {
+      "task": "ada-bathroom-plan-repair",
+      "historical_result": "/home/lihanlun123/workspace/Referenceskill/jobs/openhands-reference-skills-complete-deepseek-v4-flash/2026-09-16__21-15-30/ada-bathroom-plan-repair__1bb65f06/result.json",
+      "historical_reward": 0.0,
+      "historical_model": "deepseek/deepseek-v4-flash",
+      "historical_runner_error": null,
+      "historical_verifier_error": null,
+      "fresh_config": "/home/lihanlun123/skillpatch/configs/stage1-failed10/ada-bathroom-plan-repair.toml"
+    },
+    {
+      "task": "court-form-filling",
+      "historical_result": "/home/lihanlun123/workspace/Referenceskill/jobs/openhands-reference-skills-complete-deepseek-v4-flash/2026-09-16__21-15-30/court-form-filling__7abdb985/result.json",
+      "historical_reward": 0.0,
+      "historical_model": "deepseek/deepseek-v4-flash",
+      "historical_runner_error": null,
+      "historical_verifier_error": null,
+      "fresh_config": "/home/lihanlun123/skillpatch/configs/stage1-failed10/court-form-filling.toml"
+    },
+    {
+      "task": "manufacturing-equipment-maintenance",
+      "historical_result": "/home/lihanlun123/workspace/Referenceskill/jobs/openhands-reference-skills-complete-deepseek-v4-flash/2026-09-16__21-15-30/manufacturing-equipment-maintenance__bb38371d/result.json",
+      "historical_reward": 0.0,
+      "historical_model": "deepseek/deepseek-v4-flash",
+      "historical_runner_error": null,
+      "historical_verifier_error": null,
+      "fresh_config": "/home/lihanlun123/skillpatch/configs/stage1-failed10/manufacturing-equipment-maintenance.toml"
+    },
+    {
+      "task": "manufacturing-fjsp-optimization",
+      "historical_result": "/home/lihanlun123/workspace/Referenceskill/jobs/openhands-reference-skills-complete-deepseek-v4-flash/2026-09-16__21-15-30/manufacturing-fjsp-optimization__e3034d9f/result.json",
+      "historical_reward": 0.0,
+      "historical_model": "deepseek/deepseek-v4-flash",
+      "historical_runner_error": null,
+      "historical_verifier_error": null,
+      "fresh_config": "/home/lihanlun123/skillpatch/configs/stage1-failed10/manufacturing-fjsp-optimization.toml"
+    },
+    {
+      "task": "organize-messy-files",
+      "historical_result": "/home/lihanlun123/workspace/Referenceskill/jobs/openhands-reference-skills-complete-deepseek-v4-flash/2026-09-16__21-15-30/organize-messy-files__cd102f3c/result.json",
+      "historical_reward": 0.0,
+      "historical_model": "deepseek/deepseek-v4-flash",
+      "historical_runner_error": null,
+      "historical_verifier_error": null,
+      "fresh_config": "/home/lihanlun123/skillpatch/configs/stage1-failed10/organize-messy-files.toml"
+    },
+    {
+      "task": "sec-financial-report",
+      "historical_result": "/home/lihanlun123/workspace/Referenceskill/jobs/openhands-reference-skills-complete-deepseek-v4-flash/2026-09-16__21-15-30/sec-financial-report__60f6bdb0/result.json",
+      "historical_reward": 0.0,
+      "historical_model": "deepseek/deepseek-v4-flash",
+      "historical_runner_error": null,
+      "historical_verifier_error": null,
+      "fresh_config": "/home/lihanlun123/skillpatch/configs/stage1-failed10/sec-financial-report.toml"
+    },
+    {
+      "task": "suricata-custom-exfil",
+      "historical_result": "/home/lihanlun123/workspace/Referenceskill/jobs/openhands-reference-skills-complete-deepseek-v4-flash/2026-09-16__21-15-30/suricata-custom-exfil__560c5954/result.json",
+      "historical_reward": 0.0,
+      "historical_model": "deepseek/deepseek-v4-flash",
+      "historical_runner_error": null,
+      "historical_verifier_error": null,
+      "fresh_config": "/home/lihanlun123/skillpatch/configs/stage1-failed10/suricata-custom-exfil.toml"
+    },
+    {
+      "task": "threejs-structure-parser",
+      "historical_result": "/home/lihanlun123/workspace/Referenceskill/jobs/openhands-reference-skills-complete-deepseek-v4-flash/2026-09-16__21-15-30/threejs-structure-parser__11c7ce5c/result.json",
+      "historical_reward": 0.0,
+      "historical_model": "deepseek/deepseek-v4-flash",
+      "historical_runner_error": null,
+      "historical_verifier_error": null,
+      "fresh_config": "/home/lihanlun123/skillpatch/configs/stage1-failed10/threejs-structure-parser.toml"
+    },
+    {
+      "task": "video-silence-remover",
+      "historical_result": "/home/lihanlun123/workspace/Referenceskill/jobs/openhands-reference-skills-complete-deepseek-v4-flash/2026-09-16__21-15-30/video-silence-remover__70d610ea/result.json",
+      "historical_reward": 0.0,
+      "historical_model": "deepseek/deepseek-v4-flash",
+      "historical_runner_error": null,
+      "historical_verifier_error": null,
+      "fresh_config": "/home/lihanlun123/skillpatch/configs/stage1-failed10/video-silence-remover.toml"
+    },
+    {
+      "task": "xlsx-recover-data",
+      "historical_result": "/home/lihanlun123/workspace/Referenceskill/jobs/openhands-reference-skills-complete-deepseek-v4-flash/2026-09-16__21-15-30/xlsx-recover-data__e3d8247c/result.json",
+      "historical_reward": 0.0,
+      "historical_model": "deepseek/deepseek-v4-flash",
+      "historical_runner_error": null,
+      "historical_verifier_error": null,
+      "fresh_config": "/home/lihanlun123/skillpatch/configs/stage1-failed10/xlsx-recover-data.toml"
+    }
+  ]
+}

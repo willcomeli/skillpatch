@@ -1,0 +1,3 @@
+The following Skills also have a separate `SKILL_PATCHES.md` file: {skill_names}.
+After invoking and reading each original Skill, use a file-reading tool to read the entire `SKILL_PATCHES.md` in that Skill's directory before solving the task. Use the actual Skill location reported by `invoke_skill` to resolve this path.
+Each patch identifies the Skill file or substep it concerns and supplies `when_to_use` and `how_to_interpret`. Check its applicability against the current task and execution state; when the condition holds, use its interpretation for the identified instruction. When it does not hold, retain the original instruction. These patches supplement the original Skills; keep the original Skill files unchanged.

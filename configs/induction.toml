@@ -1,0 +1,13 @@
+[diagnosis]
+model = "deepseek-flash"
+base_url = "https://api.deepseek.com"
+api_key_env = "DEEPSEEK_API_KEY"
+prompt_path = "../prompts/induction.md"
+thinking = "disabled"
+temperature = 0.0
+max_tokens = 8192
+timeout_sec = 240
+max_input_chars = 600000
+# Stage2 grants each generation session 1800 seconds. Turns, tool calls and
+# output corrections have no count ceilings within that deadline.
+time_budget_only = true

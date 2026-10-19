@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env*
+runs/
+dist/
+build/
+
+# Local experiment state and conversation exports
+checks/
+patch_sets/
+.history/
+*.html
+.pytest_cache/

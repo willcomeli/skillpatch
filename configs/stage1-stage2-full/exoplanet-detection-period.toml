@@ -1,0 +1,32 @@
+# Start with the original SkillsBench task. The OpenHands augmenter adds the
+# reference invocation prompt at execution time; the task snapshot stays intact.
+[task]
+benchmark = "skillsbench"
+path = "/home/lihanlun123/workspace/dataset/skillsbench/tasks/exoplanet-detection-period"
+skill_mode = "with-skill"
+skill_condition = "reference-explicit"
+explicit_skill_read = true
+
+[agent]
+name = "openhands"
+# Selects the OpenHands reference prompt augmenter when explicit_skill_read=true.
+model = "deepseek/deepseek-flash"
+# Retain the original non-thinking reference condition via its environment file.
+# OpenHands in BenchFlow 0.6.3 has no ACP reasoning-effort option.
+
+[runtime]
+diagnosis_config = "/home/lihanlun123/skillpatch/configs/discovery.toml"
+diagnosis_timeout_sec = 1800
+backend = "benchflow"
+bench_command = ["/home/lihanlun123/workspace/dataset/skillsbench/.venv/bin/bench"]
+bench_python = "/home/lihanlun123/workspace/dataset/skillsbench/.venv/bin/python"
+expected_backend_version = "0.6.3"
+sandbox = "docker"
+sandbox_user = "agent"
+sandbox_setup_timeout = 1800
+agent_idle_timeout = 600
+timeout_sec = 6240
+usage_tracking = "auto"
+
+[output]
+root = "/home/lihanlun123/skillpatch/runs"

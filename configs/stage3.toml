@@ -1,0 +1,9 @@
+[stage3]
+consolidation_config = "consolidation.toml"
+evaluation_config = "consolidation-evaluation.toml"
+repair_evaluation_config = "patch-evaluation.toml"
+regression_configs = []
+repetitions = 1
+model_session_timeout_sec = 900
+# Refuse an unexpectedly large source union before any fresh task execution.
+max_validation_cases = 20
