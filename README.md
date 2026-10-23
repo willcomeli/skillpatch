@@ -24,7 +24,7 @@ context.py              SkillPatch 诊断上下文呈现和摘要
 ## 获取与测试
 
 ```bash
-git clone --recurse-submodules --branch skillpatch-rebuild https://github.com/willcomeli/skillpatch.git
+git clone --recurse-submodules https://github.com/willcomeli/skillpatch.git
 cd skillpatch
 uv venv .venvs/methods --python 3.12
 uv pip install --python .venvs/methods/bin/python -r method_input_adapters/requirements.lock.txt
