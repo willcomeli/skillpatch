@@ -1,0 +1,36 @@
+diff --git a/openhands_cli/utils.py b/openhands_cli/utils.py
+index 3a17865..283850a 100644
+--- a/openhands_cli/utils.py
++++ b/openhands_cli/utils.py
+@@ -268,4 +268,4 @@ def json_callback(event: Event) -> None:
+     if isinstance(event, SystemPromptEvent):
+         return
+ 
+-    print(json.dumps(event.model_dump(), ensure_ascii=False))
++    print(json.dumps(event.model_dump(mode="json"), ensure_ascii=False))
+diff --git a/tests/test_utils.py b/tests/test_utils.py
+index 19fdcdb..8cc7be8 100644
+--- a/tests/test_utils.py
++++ b/tests/test_utils.py
+@@ -344,3 +344,21 @@ def test_conversation_has_delegate_handles_invalid_json(
+     (events_dir / "event-00000-abc.json").write_text(content)
+ 
+     assert conversation_has_delegate_tool(conv_id) is expected
++
++
++def test_json_callback_serializes_condensation_event_sets():
++    """Guards the set serialization crash in CLI commit 0403f1a79a9f."""
++    from openhands.sdk.event.condenser import Condensation
++
++    event = Condensation(
++        forgotten_event_ids={"event-one", "event-two"},
++        summary="Conversation summary",
++        summary_offset=0,
++        llm_response_id="test-response",
++    )
++    with patch("builtins.print") as mock_print:
++        json_callback(event)
++    payload = json.loads(mock_print.call_args.args[0])
++    assert payload["kind"] == "Condensation"
++    assert set(payload["forgotten_event_ids"]) == {"event-one", "event-two"}
++    assert payload["summary"] == "Conversation summary"

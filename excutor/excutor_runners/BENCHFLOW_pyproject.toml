@@ -1,0 +1,233 @@
+[project]
+name = "benchflow"
+version = "0.7.7.dev0"
+description = "Multi-turn agent benchmarking with ACP — run any agent, any model, any provider."
+readme = "README.md"
+requires-python = ">=3.12"
+keywords = ["benchmark", "llm-agents", "acp", "agent-evaluation", "multi-turn", "skillsbench"]
+dependencies = [
+    "agent-client-protocol>=0.10",
+    "httpx>=0.27.0",
+    "anyio>=4.0",
+    "pydantic>=2.7",
+    "pyyaml>=6.0",
+    "rich>=13.0",
+    # Dataset registry bench_version checks (PEP 440 specifier sets).
+    "packaging>=24",
+    "litellm[proxy]==1.91.0",
+    "google-cloud-aiplatform>=1.133.0,<2.0",
+    "tomli-w>=1.0",
+    "typer>=0.9",
+]
+authors = [
+    { name = "Xiangyi Li", email = "xiangyi@benchflow.ai" },
+    { name = "Kyoung Whan Choe", email = "choe.kyoung@gmail.com" },
+]
+
+maintainers = [
+    { name = "Xiangyi Li", email = "xiangyi@benchflow.ai" },
+    { name = "Kyoung Whan Choe", email = "choe.kyoung@gmail.com" },
+]
+
+license = { text = "Apache-2.0" }
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+azure = [
+    # Direct Azure Blob trajectory uploads (bench traj upload --direct).
+    # Broker-mode uploads need neither package.
+    "azure-storage-blob>=12.19",
+    "azure-identity>=1.16",
+]
+azure-service = [
+    # Dependencies baked into the public trajectory broker/validator image.
+    "azure-storage-blob>=12.19",
+    "azure-identity>=1.16",
+    "azure-data-tables>=12.5",
+    "azure-storage-queue>=12.9",
+    "uvicorn>=0.30",
+]
+dev = [
+    "pre-commit>=3.7",
+    # AgentCore's CodeBuild path must reproduce Docker's ignore rules in tests
+    # even when the optional AWS backend is not installed.
+    "pathspec>=0.12",
+    "pytest>=9.0.3",
+    "pytest-asyncio>=0.24.0",
+    # Browser-level viewer tests (tests/trajectories/test_viewer_browser.py):
+    # drives the interactive template in real Chromium. Tests self-skip when
+    # playwright or its browser binary is absent, so plain `pytest tests/`
+    # stays runnable without `playwright install chromium`.
+    "playwright>=1.49",
+    "ruff>=0.7.0",
+    "ty>=0.0.1a1",
+]
+train = [
+    # Used by the Prime-RL SFT wrapper for local token-window staging before
+    # handing JSONL rows to Prime-RL.
+    "transformers==5.6.2",
+]
+trl = [
+    # Native tool-calling prompt/completion rows, assistant-only masks, and
+    # training chat-template patches used by `bench train validate --format trl-sft`.
+    "trl>=1.8.0,<2",
+    "datasets>=2.19.0",
+]
+sandbox-daytona = [
+    # >=0.183: list() returns an auto-paginating Iterator[Sandbox] (the older
+    # paged list(page=, limit=) -> .items API was removed).
+    # >=0.184: the top-level sync `Daytona` export is present (0.176-0.183 only
+    # shipped `AsyncDaytona`); `sandbox/daytona.py` uses the sync client, so this
+    # floor is required for it to import.
+    "daytona>=0.184.0",
+    "tenacity>=8.0",
+]
+sandbox-modal = [
+    "modal>=0.73",
+    "tenacity>=8.0",
+]
+sandbox-agentcore = [
+    # Bedrock AgentCore Runtime microVMs. The SDK supplies the interactive
+    # shell (`open_shell`) used as the ACP transport; boto3 supplies the
+    # control plane (CreateAgentRuntime) and the command plane
+    # (InvokeAgentRuntimeCommand). The boto3 floor is the first release that
+    # models the bedrock-agentcore/-control services.
+    "bedrock-agentcore>=1.18",
+    # Used directly by the sealed AgentCore transport (RSA-OAEP key wrap +
+    # AES-CTR/HMAC). It otherwise arrives only transitively via
+    # litellm[proxy]; declaring it here keeps the dependency honest.
+    "cryptography>=44",
+    "boto3>=1.43.31",
+    # Docker-compatible build-context filtering without requiring a daemon.
+    "pathspec>=0.12",
+]
+bedrock = [
+    "boto3>=1.40",
+]
+# Provider SDKs for the llm-judge verifier (type = "llm-judge").
+# llm.py routes judge calls across all three; install at least one.
+judge = [
+    "anthropic>=0.40",
+    "openai>=1.40",
+    "google-genai>=1.0",
+]
+# The deepagents (LangChain) harness used as an agent-under-test in the
+# integration suite's agent-as-judge robustness scenarios. Optional: only the
+# deepagents integration test needs it.
+deepagents = [
+    "deepagents>=0.6",
+    "langchain-openai>=0.2",
+]
+
+[project.scripts]
+benchflow = "benchflow.cli.main:app"
+bench = "benchflow.cli.main:app"
+
+[project.urls]
+Homepage = "https://github.com/benchflow-ai/benchflow"
+Repository = "https://github.com/benchflow-ai/benchflow"
+Issues = "https://github.com/benchflow-ai/benchflow/issues"
+Discord = "https://discord.gg/mZ9Rc8q8W3"
+Changelog = "https://github.com/benchflow-ai/benchflow/blob/main/CHANGELOG.md"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.sdist]
+# Allowlist: only ship what the installed package needs.
+only-include = [
+    "src",
+    "tests",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "pyproject.toml",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+addopts = "-m 'not live and not integration'"
+testpaths = ["tests"]
+markers = [
+    "live: requires real Anthropic API and Docker daemon (run with -m live)",
+    "integration: full integration tests — requires GEMINI_API_KEY + DAYTONA_API_KEY (run with -m integration)",
+    "browser: drives the viewer template in real Chromium via Playwright (self-skips without playwright/chromium; deselect with -m 'not browser')",
+]
+
+[tool.ruff]
+target-version = "py312"
+# Vendored third-party service packages baked into task images (e.g. the
+# smolclaws claw-* sources copied under a ClawsBench task's environment/) are
+# not BenchFlow code — do not lint them. The skill-creator, task-creator, and
+# task-review skills are verbatim upstream copies; keeping them byte-identical
+# matters more than local style, so they are excluded too. Skills authored here
+# (e.g. benchflow-experiment-review) stay linted.
+extend-exclude = [
+    ".agents/skills/skill-creator",
+    ".agents/skills/task-creator",
+    ".agents/skills/task-review",
+    ".claude/skills/skill-creator",
+    ".claude/skills/task-creator",
+    ".claude/skills/task-review",
+    "benchmarks/**/tasks/**/environment/claw-*",
+    "tests/fixtures/skillsbench_slice",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "SIM", # flake8-simplify
+    "RUF", # ruff-specific rules
+]
+ignore = [
+    "E501",   # line too long — ruff format handles wrapping; long lines are intentional
+    "RUF002", # ambiguous unicode in docstrings — × is intentional for "agent × model" matrix
+    "RUF022", # __all__ unsorted — grouped by section for agent-friendliness
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Standalone scripts — sys.path manipulation before imports is intentional
+"tests/conformance/*.py" = ["E402"]
+# Notebooks: cell-local imports + short loop vars are notebook conventions
+"docs/examples/*.ipynb" = ["E402", "E741", "SIM115"]
+# Forward references resolved via __future__ annotations — ruff flags them
+# but they work at runtime; explicit TYPE_CHECKING imports would force eager loads.
+"src/benchflow/runtime.py" = ["F821"]
+
+[tool.ty.environment]
+python-version = "3.12"
+
+[tool.ty.rules]
+# Many modules lazily import optional deps (daytona, modal, openai, toml, …).
+# These are guarded by try/except at runtime but ty can't resolve them in CI.
+unresolved-import = "ignore"
+
+[tool.ty.src]
+include = ["src", "tools"]
+# Modules that heavily use optional-dep types (daytona, modal, openai, boto3, …)
+# produce cascading type errors when those packages aren't installed.
+exclude = [
+    "src/benchflow/sandbox/daytona.py",
+    "src/benchflow/sandbox/daytona_strategies.py",
+    "src/benchflow/sandbox/daytona_dind.py",
+    "src/benchflow/sandbox/modal_impl.py",
+    "src/benchflow/sandbox/docker.py",
+    "src/benchflow/sandbox/_base.py",
+    "src/benchflow/_env_setup.py",
+    "src/benchflow/rewards/llm.py",
+    "src/benchflow/rewards/file_readers.py",
+    "src/benchflow/rewards/rubric_config.py",
+    "src/benchflow/experimental/mcp/reviewer_server.py",
+]

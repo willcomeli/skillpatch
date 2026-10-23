@@ -1,0 +1,7 @@
+[diagnosis]
+harness = "openhands"
+model = "openai/deepseek-flash"
+base_url = "https://api.deepseek.com"
+api_key_env = "DEEPSEEK_API_KEY"
+prompt_path = "../prompts/templates/skillpatch/patch_consolidation.md"
+session_timeout_sec = 900

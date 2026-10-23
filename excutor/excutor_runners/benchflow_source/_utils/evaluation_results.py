@@ -1,0 +1,300 @@
+"""Helpers for serializing evaluation rollout results."""
+
+from pathlib import Path
+from typing import Any
+
+from benchflow._utils.benchmark_repos import task_source_provenance
+from benchflow._utils.result_metadata import (
+    final_metrics_from_rollout,
+    trajectory_summary_from_events,
+)
+from benchflow._utils.reward_events import (
+    memory_score_from_events,
+    reward_event_to_dict,
+)
+from benchflow._utils.source_provenance import artifact_source_provenance
+from benchflow.models import RolloutResult
+from benchflow.trajectories.metrics import (
+    count_skill_invocations,
+    result_skill_invocations,
+)
+from benchflow.usage_tracking import is_trusted_usage_source
+
+# Phase keys produced by Rollout (see rollout.py — environment_setup,
+# agent_setup, agent_execution, verifier, total). Kept here so summary
+# aggregation stays in lockstep with the rollout writer.
+_TIMING_PHASES: tuple[str, ...] = (
+    "environment_setup",
+    "agent_setup",
+    "agent_execution",
+    "verifier",
+    "total",
+)
+
+
+def agent_result_from_rollout(result: RolloutResult) -> dict[str, Any]:
+    """Return the serialized agent_result block for an in-memory rollout result."""
+    n_skill_invocations = result.n_skill_invocations or count_skill_invocations(
+        result.trajectory
+    )
+    agent_result = {
+        "n_tool_calls": result.n_tool_calls,
+        "n_skill_invocations": n_skill_invocations,
+        "n_prompts": result.n_prompts,
+        "n_input_tokens": result.n_input_tokens,
+        "n_output_tokens": result.n_output_tokens,
+        "n_cache_read_tokens": result.n_cache_read_tokens,
+        "n_cache_creation_tokens": result.n_cache_creation_tokens,
+        "total_tokens": result.total_tokens,
+        "cost_usd": result.cost_usd,
+        "usage_source": result.usage_source,
+        "price_source": result.price_source,
+    }
+    if getattr(result, "usage_details", None) is not None:
+        agent_result["usage_details"] = result.usage_details
+    return agent_result
+
+
+def rollout_result_payload(
+    result: RolloutResult,
+    *,
+    source_provenance: dict[str, Any] | None,
+    tasks_dir: Path,
+    task_name: str,
+) -> dict[str, Any]:
+    """Normalize an in-memory rollout result to the persisted result shape."""
+    reward_events = result.reward_events or []
+    memory_score = memory_score_from_events(reward_events)
+    task_source = result.source_provenance or task_source_provenance(
+        source_provenance, tasks_dir / task_name
+    )
+    n_skill_invocations = result.n_skill_invocations or count_skill_invocations(
+        result.trajectory
+    )
+    return {
+        "task_name": result.task_name,
+        "rollout_name": result.rollout_name,
+        "rewards": result.rewards,
+        "error": result.error,
+        "error_category": result.error_category,
+        "verifier_error": result.verifier_error,
+        "verifier_error_category": result.verifier_error_category,
+        "export_error": result.export_error,
+        "n_tool_calls": result.n_tool_calls,
+        "n_skill_invocations": n_skill_invocations,
+        "agent_result": agent_result_from_rollout(result),
+        "final_metrics": final_metrics_from_rollout(result),
+        "trajectory_summary": trajectory_summary_from_events(
+            result.trajectory,
+            partial_trajectory=result.partial_trajectory,
+            trajectory_source=result.trajectory_source,
+        ),
+        **(
+            {"reward_events": [reward_event_to_dict(event) for event in reward_events]}
+            if reward_events
+            else {}
+        ),
+        **({"memory_score": memory_score} if memory_score is not None else {}),
+        **({"source": artifact_source_provenance(task_source)} if task_source else {}),
+    }
+
+
+def usage_summary(results: dict[str, dict]) -> dict[str, Any]:
+    """Aggregate provider telemetry fields for summary.json."""
+    completed = [
+        r
+        for r in results.values()
+        if r.get("rewards") is not None
+        and not r.get("error")
+        and not r.get("verifier_error")
+    ]
+    covered = [
+        r
+        for r in completed
+        if is_trusted_usage_source((r.get("agent_result") or {}).get("usage_source"))
+    ]
+
+    def total(field: str) -> int:
+        return sum((r.get("agent_result") or {}).get(field) or 0 for r in covered)
+
+    total_cost = round(
+        sum((r.get("agent_result") or {}).get("cost_usd") or 0.0 for r in covered),
+        10,
+    )
+    return {
+        "total_input_tokens": total("n_input_tokens"),
+        "total_output_tokens": total("n_output_tokens"),
+        "total_cache_read_tokens": total("n_cache_read_tokens"),
+        "total_cache_creation_tokens": total("n_cache_creation_tokens"),
+        "total_tokens": total("total_tokens"),
+        "total_cost_usd": total_cost,
+        "avg_cost_per_trial_usd": (
+            round(total_cost / len(covered), 10) if covered else None
+        ),
+        "telemetry_coverage": (len(covered) / len(completed) if completed else 0.0),
+    }
+
+
+def loop_summary(results: dict[str, dict]) -> dict[str, Any]:
+    """Aggregate per-rollout ``loop`` blocks into a job-level convergence report.
+
+    The headline loopbench artifact: the **pass@iteration curve** (cumulative
+    fraction of tasks passed by each loop iteration) plus convergence rates and
+    iteration economics. Returns ``{}`` when no result carries a real
+    (non-single-shot) loop strategy, so ordinary jobs never gain empty keys.
+    """
+    looped = [
+        loop
+        for r in results.values()
+        if isinstance((loop := r.get("loop")), dict)
+        and loop.get("strategy") not in (None, "single-shot")
+    ]
+    if not looped:
+        return {}
+
+    n = len(looped)
+    first_pass = [
+        loop["first_pass_iteration"]
+        for loop in looped
+        if loop.get("first_pass_iteration") is not None
+    ]
+    iters_run = [loop.get("iterations_run") or 0 for loop in looped]
+    max_iter = max(
+        (len(loop.get("reward_trajectory") or []) for loop in looped), default=0
+    )
+    # pass@iteration: cumulative fraction of tasks passed BY iteration i.
+    pass_at_iteration = [
+        sum(
+            1
+            for loop in looped
+            if loop.get("first_pass_iteration") is not None
+            and loop["first_pass_iteration"] <= i
+        )
+        / n
+        for i in range(max_iter)
+    ]
+    stop_reasons: dict[str, int] = {}
+    for loop in looped:
+        sr = loop.get("stop_reason") or "unknown"
+        stop_reasons[sr] = stop_reasons.get(sr, 0) + 1
+    # Cost-to-converge economics (the cost-curve money axis), over the converged
+    # tasks that actually captured token usage. None when nothing converged with
+    # usage data (e.g. a LiteLLM path that doesn't surface native tokens).
+    tokens_to_pass = [
+        loop["tokens_to_pass"]
+        for loop in looped
+        if loop.get("tokens_to_pass") is not None
+    ]
+    mean_tokens_to_converge = (
+        round(sum(tokens_to_pass) / len(tokens_to_pass), 1) if tokens_to_pass else None
+    )
+
+    return {
+        "loop_summary": {
+            "strategy": looped[0].get("strategy"),
+            "n_tasks": n,
+            "fraction_converged": len(first_pass) / n,
+            "mean_iterations_to_converge": (
+                round(sum(first_pass) / len(first_pass), 4) if first_pass else None
+            ),
+            "mean_iterations_run": round(sum(iters_run) / n, 4),
+            "mean_tokens_to_converge": mean_tokens_to_converge,
+            "pass_at_iteration": [round(p, 4) for p in pass_at_iteration],
+            "stop_reasons": stop_reasons,
+        }
+    }
+
+
+def trajectory_step_summary(results: dict[str, dict]) -> dict[str, Any]:
+    """Aggregate Harbor-style trajectory step counts for summary.json."""
+    summaries: list[dict[str, Any]] = []
+    for result in results.values():
+        summary = result.get("trajectory_summary")
+        if isinstance(summary, dict):
+            summaries.append(summary)
+    step_counts = [int(s.get("steps") or 0) for s in summaries]
+    tool_step_counts = [int(s.get("tool_call_steps") or 0) for s in summaries]
+    total_steps = sum(step_counts)
+    total_tool_steps = sum(tool_step_counts)
+
+    return {
+        "total_trajectory_steps": total_steps,
+        "avg_trajectory_steps_per_task": (
+            total_steps / len(step_counts) if step_counts else 0.0
+        ),
+        "max_trajectory_steps_per_task": max(step_counts) if step_counts else 0,
+        "total_trajectory_tool_call_steps": total_tool_steps,
+        "avg_trajectory_tool_call_steps_per_task": (
+            total_tool_steps / len(tool_step_counts) if tool_step_counts else 0.0
+        ),
+        "max_trajectory_tool_call_steps_per_task": (
+            max(tool_step_counts) if tool_step_counts else 0
+        ),
+        "trajectory_summary_coverage": (
+            len(summaries) / len(results) if results else 0.0
+        ),
+    }
+
+
+def skill_invocation_summary(results: dict[str, dict]) -> dict[str, Any]:
+    """Aggregate structured skill invocation counts for summary.json."""
+    total = sum(result_skill_invocations(result) for result in results.values())
+    return {
+        "total_skill_invocations": total,
+        "avg_skill_invocations": (round(total / len(results), 1) if results else 0.0),
+    }
+
+
+def _round_secs(value: float) -> float:
+    """Round a duration in seconds to the same precision rollout.py uses."""
+    return round(float(value), 1)
+
+
+def tool_call_summary(results: dict[str, dict]) -> dict[str, Any]:
+    """Aggregate per-rollout ``n_tool_calls`` across every result in the job.
+
+    Unlike ``usage_summary``, this counts EVERY rollout — including errored
+    and verifier-errored ones — because tool-call cost is paid regardless of
+    whether verification succeeded. Reviewers asking "how many tool calls did
+    this job consume?" want the literal sum, not a success-filtered one.
+    """
+    counts = [int(r.get("n_tool_calls") or 0) for r in results.values()]
+    total = sum(counts)
+    return {
+        "total_tool_calls": total,
+        "avg_tool_calls_per_task": (total / len(counts)) if counts else 0.0,
+        "max_tool_calls_per_task": max(counts) if counts else 0,
+    }
+
+
+def phase_timing_summary(results: dict[str, dict]) -> dict[str, Any]:
+    """Aggregate per-phase wall-clock timing across every rollout.
+
+    Sums and averages cover any rollout that recorded a ``timing`` block, so
+    reviewers can answer "how much time went to agent vs verifier?" without
+    inspecting each ``result.json``. Phase keys follow ``rollout.py``:
+    ``environment_setup``, ``agent_setup``, ``agent_execution``, ``verifier``,
+    ``total``. The ``timing_coverage`` ratio surfaces when phase data is
+    incomplete (e.g. mocked test runs that don't persist ``timing``).
+    """
+    timings: list[dict[str, float]] = []
+    for r in results.values():
+        t = r.get("timing")
+        if isinstance(t, dict) and t:
+            timings.append(t)
+
+    out: dict[str, Any] = {
+        "timing_coverage": (len(timings) / len(results)) if results else 0.0,
+    }
+    for phase in _TIMING_PHASES:
+        values = [
+            float(t[phase]) for t in timings if isinstance(t.get(phase), (int, float))
+        ]
+        # Phases with no data get a 0.0 sum + null avg/max so downstream
+        # readers can distinguish "ran but cost nothing" from "no data".
+        out[f"{phase}_time_sec"] = _round_secs(sum(values)) if values else 0.0
+        out[f"avg_{phase}_time_sec"] = (
+            _round_secs(sum(values) / len(values)) if values else None
+        )
+        out[f"max_{phase}_time_sec"] = _round_secs(max(values)) if values else None
+    return out

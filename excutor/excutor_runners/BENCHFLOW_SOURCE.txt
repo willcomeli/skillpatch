@@ -1,0 +1,8 @@
+Source repository: /home/lihanlun123/workspace/benchflow
+Source directory: src/benchflow
+Repository HEAD: a0b1698537ec8479eabcbae20541e7b28b605b8e
+Copied on: 2026-10-22
+Snapshot of local working tree; may include local modifications.
+Excluded: __pycache__, *.pyc, *.pyo
+This is a source reference copy, not an installed or wired execution backend.
+The original source and active installed BenchFlow remain unchanged.

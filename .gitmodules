@@ -1,0 +1,9 @@
+[submodule "openhands"]
+	path = harness/openhands
+	url = https://github.com/OpenHands/OpenHands-CLI.git
+[submodule "codex"]
+	path = harness/codex
+	url = https://github.com/openai/codex.git
+[submodule "skillopt"]
+	path = method/skillopt
+	url = https://github.com/microsoft/SkillOpt.git

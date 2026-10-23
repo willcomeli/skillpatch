@@ -1,0 +1,4 @@
+[patch_validation]
+evaluation_config = "skillpatch-evaluation.toml"
+regression_configs = []
+repetitions = 1

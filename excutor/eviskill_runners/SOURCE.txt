@@ -1,0 +1,5 @@
+Source: /home/lihanlun123/workspace/EviSkill
+Commit: 896dbcb75b94d09dc5330e1cc6dcadb864244e77
+Copied local working-tree files on 2026-10-22.
+Changes: local package exports; relocated ScienceWorld server script path.
+No dependency on the original wmsm package is required.

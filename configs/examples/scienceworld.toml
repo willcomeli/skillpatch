@@ -1,0 +1,22 @@
+[task]
+benchmark = "scienceworld"
+path = "tasks.json"
+skill_path = "skill/SKILL.md"
+
+[agent]
+name = "native"
+model = "your-model"
+api_key_env = "OPENAI_API_KEY"
+base_url_env = "OPENAI_BASE_URL"
+
+[runtime]
+backend = "eviskill"
+timeout_sec = 300
+
+[runtime.runner_options]
+remote_environment_url = "http://127.0.0.1:8811"
+auto_server = false
+max_steps = 100
+
+[output]
+root = "../../runs"

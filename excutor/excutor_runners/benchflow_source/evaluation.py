@@ -1,0 +1,2055 @@
+"""Evaluation management — run many tasks against an agent with concurrency, retries, resume.
+
+An ``Evaluation`` wraps ``bf.run()`` with everything needed to drive a benchmark
+to completion: task discovery, parallelism, retry policy, resume from
+disk, summary aggregation.
+
+Backward-compat aliases: ``Job = Evaluation``, ``JobConfig = EvaluationConfig``,
+``JobResult = EvaluationResult``.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import os
+import re
+import subprocess
+import threading
+import time
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
+from typing import Any, cast
+
+import yaml
+
+from benchflow._utils.evaluation_results import (
+    loop_summary,
+    phase_timing_summary,
+    rollout_result_payload,
+    skill_invocation_summary,
+    tool_call_summary,
+    trajectory_step_summary,
+    usage_summary,
+)
+from benchflow._utils.learner_memory import (
+    attach_memory_score,
+    evolved_skills_for_result,
+    expected_skills_for_task,
+    memory_delta_from_skills,
+    patch_learner_generation_artifact,
+)
+from benchflow._utils.reward_events import memory_summary
+from benchflow._utils.scoring import (
+    ACP_ERROR,
+    API_ERROR,
+    IDLE_TIMEOUT,
+    INFRA_ERROR,
+    INSTALL_FAILED,
+    PIPE_CLOSED,
+    PROVIDER_AUTH,
+    PROVIDER_RATE_LIMIT,
+    PROVIDER_REJECTED,
+    SANDBOX_SETUP,
+    SUSPECTED_API_ERROR,
+    VERIFIER_DEP_INSTALL,
+    VERIFIER_INFRA,
+    VERIFIER_TIMEOUT,
+    api_error_is_transient,
+    classify_error,
+    classify_score_outcome,
+    classify_verifier_error,
+    count_audit_outcomes,
+    count_score_outcomes,
+    extract_reward,
+    mean_scored_reward,
+    pass_rate,
+    pass_rate_excl_errors,
+)
+from benchflow._utils.source_provenance import summary_source_fields
+from benchflow._utils.text import truncate_end
+from benchflow.diagnostics import DIAGNOSTIC_REGISTRY, summary_warning
+from benchflow.environment.manifest import EnvironmentManifest
+from benchflow.learner_store import LearnerState, LearnerStore
+from benchflow.loop_strategies import (
+    LoopStrategySpec,
+    loop_block,
+    parse_loop_strategy_spec,
+)
+from benchflow.models import RolloutResult
+from benchflow.skill_policy import (
+    SKILL_MODE_NO_SKILL,
+    SKILL_MODE_SELF_GEN,
+    SKILL_MODE_WITH_SKILL,
+    normalize_skill_mode,
+)
+from benchflow.task.discovery import (
+    is_task_dir as _is_structural_task_dir,
+)
+from benchflow.task.discovery import (
+    resolve_task_collection_root,
+)
+from benchflow.trajectories.tree import RolloutNode
+from benchflow.usage_tracking import UsageTrackingConfig
+
+# Backward-compat alias
+RunResult = RolloutResult
+
+logger = logging.getLogger(__name__)
+
+# Label applied to every container/network BenchFlow's compose files create.
+# Used to scope Docker prune calls so we only delete our own resources and never
+# touch unrelated containers/networks on shared developer or CI hosts.
+BENCHFLOW_OWNED_LABEL = "benchflow.owned=true"
+
+# Serialize docker prune across concurrent _run_task retries. When --concurrency
+# is high (e.g. 60) and tasks retry in lockstep, parallel `docker container
+# prune` calls each block on the daemon and time out at 30s, cascading into
+# false install_failure errors. Non-blocking acquire: if a prune is already in
+# flight, skip — there's nothing new to clean since the in-flight one started.
+_PRUNE_LOCK = threading.Lock()
+
+
+def _environment_manifest_from_task_document(
+    task_dir: Path,
+) -> EnvironmentManifest | None:
+    task_md = task_dir / "task.md"
+    if not task_md.is_file():
+        return None
+
+    from benchflow.environment.manifest import load_manifest
+    from benchflow.task.document import TaskDocument
+
+    document = TaskDocument.from_path(task_md)
+    environment = document.benchflow.get("environment")
+    if environment is None:
+        return None
+    if not isinstance(environment, dict):
+        raise ValueError("task.md benchflow.environment must be a mapping")
+    manifest = environment.get("manifest")
+    if manifest is None:
+        return None
+    if not isinstance(manifest, str) or not manifest.strip():
+        raise ValueError("task.md benchflow.environment.manifest must be a path")
+
+    manifest_path = Path(manifest)
+    if not manifest_path.is_absolute():
+        manifest_path = task_dir / manifest_path
+    return load_manifest(manifest_path)
+
+
+_SENTINEL: Any = object()  # default value for _sdk; tests replace with AsyncMock
+
+
+def _is_task_dir(path: Path) -> bool:
+    if not (path / "task.md").exists():
+        return _is_structural_task_dir(path)
+    from benchflow._utils.task_authoring import check_task
+
+    return check_task(path) == []
+
+
+class EmptyTaskSelectionError(ValueError):
+    """Raised when task discovery + include/exclude filters resolve to zero tasks.
+
+    Failing fast is preferred over silently writing a 0/0 summary.json that
+    downstream dashboards may ingest as evidence (#407).
+    """
+
+
+class ResumeMismatchError(ValueError):
+    """Raised when resuming a jobs_dir whose completed tasks ran a different agent.
+
+    A jobs_dir holds one (agent, model) run. Folding a *different* agent's cached
+    rollouts into this run would publish a blended ``Score: X/N`` that belongs to
+    neither agent (the symptom: scores appear for tasks this agent never ran).
+    Refuse rather than warn-and-proceed — and rather than re-run over the prior
+    rows, which would destroy the earlier agent's results. The fix is a fresh
+    --jobs-dir, which also preserves the existing data.
+    """
+
+
+class MalformedTaskError(ValueError):
+    """A single-task input whose ``task.md`` exists but fails to parse (#3).
+
+    Subclasses ``ValueError`` so the CLI's existing run-error handlers surface it
+    as a clean red message + exit 1. The message names the offending file —
+    silently treating a typo'd task.md as "not a task" would make the task vanish.
+    """
+
+
+@dataclass
+class RetryConfig:
+    """Configuration for retry behavior.
+
+    Matches Harbor's RetryConfig pattern: exponential backoff with
+    configurable exception filtering. Legacy boolean fields are
+    preserved for backwards compat but the category-based check
+    covers all cases.
+    """
+
+    max_retries: int = 2
+    retry_on_install: bool = True
+    retry_on_pipe: bool = True
+    retry_on_acp: bool = True
+    retry_on_idle_timeout: bool = True
+    retry_on_infra: bool = True
+    retry_on_verifier_infra: bool = True
+    # Provider API errors: only TRANSIENT ones (rate limit, 5xx) are
+    # retryable — auth/quota/model-not-found are permanent until a human
+    # fixes the credential or model id, so retrying only burns wall-clock.
+    retry_on_api_error: bool = True
+    wait_multiplier: float = 2.0
+    min_wait_sec: float = 1.0
+    max_wait_sec: float = 30.0
+    exclude_categories: set[str] = field(
+        default_factory=lambda: {
+            "timeout",
+            PROVIDER_AUTH,
+            PROVIDER_RATE_LIMIT,
+            PROVIDER_REJECTED,
+        }
+    )
+
+    @classmethod
+    def from_mapping(cls, raw: dict | None) -> RetryConfig:
+        """Build from a serialized ``retry`` payload (e.g. a worker config).
+
+        Any omitted field falls back to this dataclass's own default — never a
+        hard-coded literal — so a partial/older payload that drops, say,
+        ``exclude_categories`` still excludes ``provider_auth`` (#564 finding 2).
+        """
+        raw = raw or {}
+        defaults = cls()
+        exclude = raw.get("exclude_categories")
+        return cls(
+            max_retries=int(raw.get("max_retries", defaults.max_retries)),
+            retry_on_install=bool(
+                raw.get("retry_on_install", defaults.retry_on_install)
+            ),
+            retry_on_pipe=bool(raw.get("retry_on_pipe", defaults.retry_on_pipe)),
+            retry_on_acp=bool(raw.get("retry_on_acp", defaults.retry_on_acp)),
+            retry_on_idle_timeout=bool(
+                raw.get("retry_on_idle_timeout", defaults.retry_on_idle_timeout)
+            ),
+            retry_on_infra=bool(raw.get("retry_on_infra", defaults.retry_on_infra)),
+            retry_on_api_error=bool(
+                raw.get("retry_on_api_error", defaults.retry_on_api_error)
+            ),
+            retry_on_verifier_infra=bool(
+                raw.get("retry_on_verifier_infra", defaults.retry_on_verifier_infra)
+            ),
+            wait_multiplier=float(raw.get("wait_multiplier", defaults.wait_multiplier)),
+            min_wait_sec=float(raw.get("min_wait_sec", defaults.min_wait_sec)),
+            max_wait_sec=float(raw.get("max_wait_sec", defaults.max_wait_sec)),
+            exclude_categories=(
+                set(exclude) if exclude is not None else defaults.exclude_categories
+            ),
+        )
+
+    def should_retry(
+        self,
+        error: str | None,
+        *,
+        category: str | None = None,
+    ) -> bool:
+        """Check if an error is retryable."""
+        category = category or classify_error(error)
+        if not category:
+            return False
+        if category in self.exclude_categories:
+            return False
+        if self.retry_on_install and category == INSTALL_FAILED:
+            return True
+        if self.retry_on_pipe and category == PIPE_CLOSED:
+            return True
+        if self.retry_on_idle_timeout and category == IDLE_TIMEOUT:
+            return True
+        if self.retry_on_infra and category in {INFRA_ERROR, SANDBOX_SETUP}:
+            return True
+        if category == API_ERROR:
+            # Transient-only: rate limit / provider 5xx self-heal on backoff;
+            # permanent (auth, quota, model_not_found, rejected_request) do not.
+            return self.retry_on_api_error and api_error_is_transient(error)
+        if category == SUSPECTED_API_ERROR:
+            # Zero-signal verdicts have an unknown subcategory — never provably
+            # transient, so never auto-retried (rerun is an operator action).
+            return False
+        return bool(self.retry_on_acp and category == ACP_ERROR)
+
+    def should_retry_verifier_error(self, verifier_error: str | None) -> bool:
+        """Check if a verifier error is infrastructure-retryable."""
+        if not self.retry_on_verifier_infra:
+            return False
+        return classify_verifier_error(verifier_error) in {
+            VERIFIER_INFRA,
+            VERIFIER_TIMEOUT,
+        }
+
+    def backoff_delay(self, attempt: int) -> float:
+        """Exponential backoff delay for retry attempt."""
+        delay = self.min_wait_sec * (self.wait_multiplier**attempt)
+        return min(delay, self.max_wait_sec)
+
+
+class ApiErrorCircuitBreaker:
+    """Trip after N consecutive permanent provider-API failures with the SAME
+    fingerprint (classic dead key / wrong model id), so a doomed batch stops
+    burning sandbox-hours producing all-unhealthy artifacts.
+
+    Isolated api_errors never interrupt the batch — any completion that is not
+    a permanent api_error resets the streak. Threshold comes from
+    ``BENCHFLOW_API_ERROR_BREAKER_THRESHOLD`` (default 5; ``0`` disables).
+    Already-running tasks finish; only not-yet-started tasks are skipped.
+    """
+
+    ENV_VAR = "BENCHFLOW_API_ERROR_BREAKER_THRESHOLD"
+    DEFAULT_THRESHOLD = 5
+
+    def __init__(self, threshold: int | None = None) -> None:
+        if threshold is None:
+            raw = os.environ.get(self.ENV_VAR, "")
+            try:
+                threshold = int(raw) if raw.strip() else self.DEFAULT_THRESHOLD
+            except ValueError:
+                threshold = self.DEFAULT_THRESHOLD
+        self.threshold = max(threshold, 0)
+        self._fingerprint: str | None = None
+        self._streak = 0
+        self.tripped = False
+
+    @staticmethod
+    def _fingerprint_of(result: RunResult) -> str | None:
+        """Permanent-api-error fingerprint, or None when not breaker-relevant."""
+        category = result.error_category or classify_error(result.error)
+        if category == SUSPECTED_API_ERROR:
+            return "suspected:zero_signal"
+        if category == API_ERROR and not api_error_is_transient(result.error):
+            match = re.search(r"\[([a-z_]+)/permanent\] HTTP (\d+)", result.error or "")
+            return (
+                f"{match.group(1)}:{match.group(2)}" if match else "api_error:unknown"
+            )
+        return None
+
+    def record(self, result: RunResult) -> None:
+        """Track one completed task; trip when the same-fingerprint streak hits
+        the threshold."""
+        if self.threshold == 0 or self.tripped:
+            return
+        fingerprint = self._fingerprint_of(result)
+        if fingerprint is None:
+            self._fingerprint = None
+            self._streak = 0
+            return
+        if fingerprint == self._fingerprint:
+            self._streak += 1
+        else:
+            self._fingerprint = fingerprint
+            self._streak = 1
+        if self._streak >= self.threshold:
+            self.tripped = True
+            logger.error(
+                f"API-error circuit breaker OPEN: {self._streak} consecutive "
+                f"permanent provider failures [{fingerprint}] — skipping "
+                f"remaining unstarted tasks (set {self.ENV_VAR}=0 to disable)"
+            )
+
+    def skip_error(self) -> str:
+        return (
+            f"skipped: api-error circuit breaker open "
+            f"([{self._fingerprint}] x{self._streak} consecutive)"
+        )
+
+
+# Defaults: works out-of-the-box with `claude login` (subscription auth, no API key needed)
+DEFAULT_AGENT = "claude-agent-acp"
+DEFAULT_MODEL = "claude-haiku-4-5-20251001"
+
+# Job scheduling modes (architecture.md § "Lifecycles" — the Job lifecycle).
+# - parallel-independent: the default — rollouts run concurrently, isolated.
+# - sequential-shared: continual learning — rollouts run in order over one
+#   persistent, versioned LearnerStore (capability 5).
+JOB_MODES = ("parallel-independent", "sequential-shared")
+DEFAULT_JOB_MODE = "parallel-independent"
+
+
+def _check_resume_mismatch(job_dir: Path, config: EvaluationConfig) -> None:
+    """Guard against resuming a jobs_dir whose completed tasks ran differently.
+
+    Reads one completed rollout's config.json (written by SDK.run) and
+    compares its agent and ``loop`` block against the resuming config.
+    Pre-loop-strategy config.json files have no ``loop`` key — they ran
+    single-shot, so they default to ``loop_block(None)`` and still warn
+    when the resume requests a strategy.
+
+    An *agent* mismatch raises :class:`ResumeMismatchError` (a blended score is
+    meaningless and silently mixing one in is the bug this guards). A
+    *loop_strategy* mismatch — same agent, different tuning — only warns.
+    """
+    sample_dir = (
+        next((d for d in job_dir.iterdir() if d.is_dir()), None)
+        if job_dir.exists()
+        else None
+    )
+    prev_agent = ""
+    prev_loop: dict | None = None
+    if sample_dir:
+        for cfg_file in sample_dir.rglob("config.json"):
+            try:
+                cfg = json.loads(cfg_file.read_text())
+                prev_agent = cfg.get("agent", "")
+                prev_loop = cfg.get("loop") or loop_block(None)
+                break
+            except (json.JSONDecodeError, OSError):
+                logger.debug("Could not read %s", cfg_file)
+    if prev_agent and prev_agent != config.agent:
+        raise ResumeMismatchError(
+            f"refusing to resume: this jobs_dir's completed tasks ran "
+            f"agent={prev_agent!r}, but this run uses agent={config.agent!r}. "
+            f"Mixing them would publish a blended score that belongs to neither. "
+            f"Use a fresh --jobs-dir (the existing results are preserved)."
+        )
+    current_loop = loop_block(config.loop_strategy)
+    if prev_loop is not None and prev_loop != current_loop:
+        logger.warning(
+            f"Resuming with loop_strategy={current_loop} but "
+            f"completed tasks used loop_strategy={prev_loop}. "
+            f"Use a different jobs_dir to avoid mixing results."
+        )
+
+
+def _classify_completed_outcomes(
+    completed: dict[str, dict],
+) -> tuple[int, int, int]:
+    """(passed, failed, errored) over already-complete (resumed) result payloads.
+
+    Mirrors ``_log_and_report``'s classification (reward==1 → passed, reward not
+    None → failed, else errored) so the live dashboard's resumed-seeded counts
+    match how this-run results are tallied.
+    """
+    passed = failed = errored = 0
+    for r in completed.values():
+        reward = extract_reward(r) if isinstance(r, dict) else None
+        if reward == 1:
+            passed += 1
+        elif reward is not None:
+            failed += 1
+        else:
+            errored += 1
+    return passed, failed, errored
+
+
+def effective_model(agent: str, model: str | None) -> str | None:
+    """Resolve the model an agent should run with.
+
+    Resolution order:
+      1. An explicit ``--model`` always wins.
+      2. The agent's own ``default_model`` (e.g. ``gemini-2.5-flash`` for the
+         gemini agent) — keeps each agent on its native provider.
+      3. ``DEFAULT_MODEL`` only when the caller is on the default agent.
+         Substituting it under any other agent silently cross-wires providers
+         and was the root cause of #343 (gemini eval demanding ANTHROPIC_API_KEY).
+
+    Oracle runs solve.sh and never calls an LLM, so it never receives a model
+    (the chokepoint in resolve_agent_env defends, but callers should also stop
+    materializing DEFAULT_MODEL into oracle configs to keep the data honest —
+    e.g. result-summary JSON shows model=null instead of a bogus default).
+    """
+    if agent == "oracle":
+        return None
+    if model:
+        return model
+    # Look up the agent's own default. Unknown agents (raw-command fallback)
+    # bypass the registry lookup and use the global default.
+    from benchflow.agents.registry import AGENTS
+
+    agent_cfg = AGENTS.get(agent)
+    if agent_cfg and agent_cfg.default_model:
+        return agent_cfg.default_model
+    if agent == DEFAULT_AGENT or agent_cfg is None:
+        return DEFAULT_MODEL
+    raise ValueError(
+        f"agent {agent!r} has no default model; pass --model "
+        f"(refusing to fall back to {DEFAULT_MODEL!r} from a different provider)"
+    )
+
+
+@dataclass
+class EvaluationConfig:
+    """Configuration for a benchmark job."""
+
+    agent: str = DEFAULT_AGENT
+    model: str | None = None
+    reasoning_effort: str | None = None
+    environment: str = "docker"
+    concurrency: int = 4
+    build_concurrency: int | None = None
+    prompts: list[str | None] | None = None
+    agent_env: dict[str, str] = field(default_factory=dict)
+    retry: RetryConfig = field(default_factory=RetryConfig)
+    skills_dir: str | None = None
+    sandbox_user: str | None = "agent"
+    sandbox_locked_paths: list[str] | None = None
+    sandbox_setup_timeout: int = 120
+    skip_agent_install: bool = False
+    agent_idle_timeout: int | None = 600
+    context_root: str | None = None
+    base_image_override: str | None = None
+    exclude_tasks: set[str] = field(default_factory=set)
+    include_tasks: set[str] = field(default_factory=set)
+    skill_mode: str = SKILL_MODE_NO_SKILL
+    skill_creator_dir: str | None = None
+    self_gen_no_internet: bool = False
+    job_mode: str = DEFAULT_JOB_MODE
+    source_provenance: dict[str, Any] | None = None
+    # Registry dataset identity (`bench eval run -d name@version`). When
+    # set, every result.json/config.json is stamped with dataset_name,
+    # dataset_version, and the task's registry content digest — see
+    # docs/dataset-versioning.md in benchflow-ai/skillsbench.
+    dataset_name: str | None = None
+    dataset_version: str | None = None
+    dataset_task_digests: dict[str, str] = field(default_factory=dict)
+    usage_tracking: UsageTrackingConfig = field(default_factory=UsageTrackingConfig)
+    # Environment-plane manifest applied to every rollout in the batch.
+    # When set, each task's RolloutConfig.environment_manifest is populated
+    # so the Environment plane (manifest-declared stateful environment,
+    # readiness gating, teardown) is exercised — closing the gap between
+    # single-rollout SDK.run() and the batch Evaluation/Job API (#398).
+    environment_manifest: EnvironmentManifest | None = None
+    # C-axis overlay (parsed dict) deep-merged into each task's resolved config.
+    config_override: dict | None = None
+    # Harness loop strategy applied to every rollout (e.g.
+    # "verify-retry:k=3,feedback=names"). Threaded to RolloutConfig.from_legacy
+    # and stamped in summary.json; None = single-shot. A dict (the to_mapping()
+    # shape) is also accepted at runtime — __post_init__ materializes it.
+    loop_strategy: LoopStrategySpec | str | None = None
+
+    def __post_init__(self):
+        from benchflow._utils.config import (
+            normalize_agent_idle_timeout,
+            normalize_agent_name,
+            normalize_reasoning_effort,
+            normalize_sandbox_user,
+        )
+        from benchflow.agents.registry import AGENTS
+
+        self.agent = normalize_agent_name(self.agent)
+        self.reasoning_effort = normalize_reasoning_effort(self.reasoning_effort)
+        self.sandbox_user = normalize_sandbox_user(self.sandbox_user)
+        self.agent_idle_timeout = normalize_agent_idle_timeout(self.agent_idle_timeout)
+        self.usage_tracking = UsageTrackingConfig.coerce(self.usage_tracking)
+        self.skill_mode = normalize_skill_mode(self.skill_mode)
+        if isinstance(self.loop_strategy, str):
+            self.loop_strategy = parse_loop_strategy_spec(self.loop_strategy)
+        elif isinstance(self.loop_strategy, dict):
+            # The to_mapping() dict shape (e.g. a stamped spec round-tripped back
+            # through a --config YAML, or an SDK EvaluationConfig(loop_strategy={...}))
+            # must materialize too — not silently fall through and mislabel the run
+            # single-shot. Mirror the sharding guard's loud-failure stance.
+            # cast: isinstance narrows to dict[Unknown, Unknown]; from_mapping
+            # validates the keys at runtime.
+            self.loop_strategy = LoopStrategySpec.from_mapping(
+                cast("dict[str, Any]", self.loop_strategy)
+            )
+        elif self.loop_strategy is not None and not isinstance(
+            self.loop_strategy, LoopStrategySpec
+        ):
+            raise ValueError(
+                "loop_strategy must be a spec string, mapping, or LoopStrategySpec, "
+                f"got {type(self.loop_strategy).__name__}"
+            )
+        if self.skills_dir is not None and self.skill_mode != SKILL_MODE_WITH_SKILL:
+            raise ValueError("skills_dir requires skill_mode='with-skill'")
+        if self.job_mode not in JOB_MODES:
+            raise ValueError(
+                f"unknown job_mode {self.job_mode!r} — "
+                f"expected one of {', '.join(JOB_MODES)}"
+            )
+        if self.agent != "oracle" and self.agent not in AGENTS:
+            available = ", ".join(sorted(AGENTS.keys()))
+            logger.warning(
+                f"Unknown agent {self.agent!r} — not in registry. "
+                f"Available: {available}. Will attempt to use as raw command."
+            )
+
+
+@dataclass(frozen=True)
+class TaskFailure:
+    """Cheap failure evidence for one FAILED (scored, reward != 1) task.
+
+    Carried on :class:`EvaluationResult` so the CLI's final block can print a
+    one-line reason per failed task from data the engine already holds —
+    without re-reading result.json files. Errored tasks are excluded (they
+    already surface through the error counters and warning replay).
+    """
+
+    task_name: str
+    rewards: dict[str, Any] | None
+    verifier_error: str | None
+    # The task's rollout dir name under the job dir (``<task>__<uuid8>``), so
+    # the CLI can find the rollout's verifier artifacts without guessing.
+    # None on results persisted before the key existed.
+    rollout_name: str | None = None
+
+
+@dataclass
+class EvaluationResult:
+    """Aggregated results for a job."""
+
+    job_name: str
+    config: EvaluationConfig
+    total: int = 0
+    passed: int = 0
+    failed: int = 0
+    errored: int = 0
+    verifier_errored: int = 0
+    elapsed_sec: float = 0.0
+    memory_score: float | None = None
+    memory_scores: dict[str, float] = field(default_factory=dict)
+    task_failures: list[TaskFailure] = field(default_factory=list)
+    # Mean of rewards over scored rollouts (None when nothing scored). The
+    # pass/fail counts binarize at reward==1, which erases partial credit —
+    # a 0.3 rubric score and a flat 0 both print as FAIL without this.
+    mean_reward: float | None = None
+
+    @property
+    def score(self) -> float:
+        """Pass rate over all tasks."""
+        return pass_rate(passed=self.passed, total=self.total)
+
+    @property
+    def score_excl_errors(self) -> float:
+        """Pass rate excluding errored tasks."""
+        return pass_rate_excl_errors(passed=self.passed, failed=self.failed)
+
+
+class Evaluation:
+    """Run a benchmark job across multiple tasks.
+
+    Usage:
+        from benchflow._utils.benchmark_repos import resolve_source
+
+        evaluation = Evaluation(
+            tasks_dir=resolve_source("harbor-framework/terminal-bench-2"),
+            jobs_dir="parity/tb2-haiku",
+            config=EvaluationConfig(model="claude-haiku-4-5-20251001"),
+        )
+        result = await evaluation.run()
+        print(result.score)
+
+    Or from YAML:
+        evaluation = Evaluation.from_yaml("tb2.yaml")
+        result = await evaluation.run()
+    """
+
+    @staticmethod
+    def _resolve_job_name(jobs_dir: Path) -> str:
+        """Pick a job_name when none was explicitly provided.
+
+        If ``jobs_dir`` already contains exactly one timestamped job
+        directory, reuse it so that a second ``Evaluation.run()`` call
+        resumes into the same directory instead of creating an orphan.
+        When zero job dirs exist (or ``jobs_dir`` itself does not exist),
+        fall back to a fresh timestamp.  When multiple exist, resume into
+        the most recent (alphabetically last).
+
+        Guards ENG-160: auto-generated job_name must be stable across
+        resume calls.
+        """
+        if jobs_dir.is_dir():
+            job_dirs = sorted(
+                d
+                for d in jobs_dir.iterdir()
+                if d.is_dir() and not d.name.startswith(".")
+            )
+            if len(job_dirs) == 1:
+                logger.info(f"Resuming into existing job directory: {job_dirs[0].name}")
+                return job_dirs[0].name
+            if len(job_dirs) > 1:
+                latest = job_dirs[-1]
+                logger.info(
+                    f"Multiple job directories found ({len(job_dirs)}); "
+                    f"resuming into most recent: {latest.name}"
+                )
+                return latest.name
+        return datetime.now().strftime("%Y-%m-%d__%H-%M-%S")
+
+    def __init__(
+        self,
+        tasks_dir: str | Path,
+        jobs_dir: str | Path,
+        config: EvaluationConfig | None = None,
+        job_name: str | None = None,
+        on_result: Callable[[str, RunResult], None] | None = None,
+        on_task_start: Callable[[str], None] | None = None,
+        on_plan: Callable[[int, int, int, tuple[int, int, int]], None] | None = None,
+    ):
+        self._tasks_dir = resolve_task_collection_root(tasks_dir)
+        self._jobs_dir = Path(jobs_dir)
+        self._config = config or EvaluationConfig()
+        if self._config.source_provenance is None:
+            from benchflow._utils.hf_datasets import load_source_sidecar
+
+            self._config.source_provenance = load_source_sidecar(self._tasks_dir)
+        self._job_name = job_name or self._resolve_job_name(self._jobs_dir)
+        self._on_result = on_result
+        # UI-progress hooks (the CLI live dashboard; None everywhere else). Fired
+        # best-effort via _fire_progress so a display bug never aborts a run.
+        self._on_task_start = on_task_start
+        self._on_plan = on_plan
+        # Kept for test mocking compat; _run_task prefers Rollout
+        from benchflow.sdk import SDK
+
+        self._sdk = SDK()
+        # The persistent learner store for sequential-shared (continual
+        # learning) jobs — the one owner. parallel-independent jobs leave it
+        # None.
+        #
+        # On resume, the store is restored from the per-job JSON snapshot so
+        # rollout N+1 still inherits the (memory + skills) state earlier
+        # rollouts evolved. Without this restore an interrupted continual-
+        # learning job would silently mix old result rows with a fresh empty
+        # store (issue #394).
+        self.learner_store: LearnerStore | None = (
+            self._load_or_init_learner_store()
+            if self._config.job_mode == "sequential-shared"
+            else None
+        )
+        # Per-rollout continual-learning skill dirs, set by
+        # _run_sequential_shared before each _run_task call and consumed by
+        # _run_single_task. None outside sequential-shared mode.
+        self._learner_skills_dir: Path | None = None
+        self._learner_export_dir: Path | None = None
+        # One RolloutNode per sequential-shared rollout, each carrying that
+        # rollout's memory_delta — the Memory-space scorer's input.
+        self.learner_nodes: list[RolloutNode] = []
+
+    def _learner_store_path(self) -> Path:
+        """Where the persisted LearnerStore snapshot lives for this job."""
+        return self._jobs_dir / self._job_name / "learner_store.json"
+
+    def _load_or_init_learner_store(self) -> LearnerStore:
+        """Restore the per-job LearnerStore snapshot, or start fresh.
+
+        A corrupt snapshot is a hard failure rather than a silent reset: a
+        resumed continual-learning job that secretly started from an empty
+        store is exactly the bug this guards (issue #394).
+        """
+        snapshot = self._learner_store_path()
+        if not snapshot.is_file():
+            return LearnerStore()
+        try:
+            store = LearnerStore.load(snapshot)
+        except (ValueError, OSError, json.JSONDecodeError) as e:
+            raise RuntimeError(
+                f"Could not load persisted LearnerStore from {snapshot}: {e}. "
+                f"Delete the file or use a fresh jobs_dir to start a new run."
+            ) from e
+        logger.info(
+            f"Resumed LearnerStore from {snapshot} at generation "
+            f"{store.generation} ({len(store.history) - 1} prior rollouts)"
+        )
+        return store
+
+    def _save_learner_store(self) -> None:
+        """Persist the current LearnerStore so the next process can resume it."""
+        if self.learner_store is None:
+            return
+        try:
+            self.learner_store.save(self._learner_store_path())
+        except OSError as e:
+            logger.warning(f"Could not persist LearnerStore: {e}")
+
+    @classmethod
+    def from_yaml(cls, path: str | Path, **kwargs) -> Evaluation:
+        """Create a Job from a YAML config file.
+
+        Supports both benchflow-native and legacy YAML formats.
+
+        benchflow format:
+            tasks_dir: path/to/tasks
+            jobs_dir: jobs/my-run
+            agent: claude-agent-acp
+            model: claude-haiku-4-5-20251001
+            environment: daytona
+            concurrency: 64
+            max_retries: 1
+            prompts:
+              - null
+              - "Review your solution and fix any issues."
+
+        Legacy format (agents + datasets style):
+            jobs_dir: jobs
+            n_attempts: 1
+            orchestrator:
+              n_concurrent_trials: 4
+            environment:
+              type: docker
+              env:
+                - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+            agents:
+              - name: claude-agent-acp
+                model_name: anthropic/claude-haiku-4-5-20251001
+            datasets:
+              - path: path/to/tasks
+        """
+        path = Path(path)
+        with open(path) as f:
+            raw = yaml.safe_load(f)
+
+        # A non-mapping document (empty file → None, or a top-level list/scalar)
+        # is not a valid config. Reject it up front: the membership tests below
+        # would otherwise TypeError on None, or silently substring-match a scalar
+        # string that happens to contain "agents"/"datasets" and mis-route to
+        # the legacy parser.
+        if not isinstance(raw, dict):
+            raise ValueError(
+                f"Eval config {path} must be a YAML mapping with 'source' or "
+                f"'tasks_dir' (or legacy 'agents'/'datasets'); got "
+                f"{type(raw).__name__}."
+            )
+
+        # Detect format: legacy uses "agents" + "datasets", benchflow uses "agent"
+        if "agents" in raw or "datasets" in raw:
+            return cls._from_legacy_yaml(raw, **kwargs)
+        return cls._from_native_yaml(raw, **kwargs)
+
+    @classmethod
+    def _from_native_yaml(cls, raw: dict, **kwargs) -> Evaluation:
+        """Parse benchflow-native YAML."""
+        from benchflow._utils.benchmark_repos import (
+            TASK_ALIASES,
+            ensure_tasks,
+            resolve_source_with_metadata,
+        )
+        from benchflow.adapters.source import adapt_resolved_source_if_needed
+
+        # New two-field format: source.repo + source.path
+        source_provenance = None
+        if "source" in raw:
+            src = raw["source"]
+            if not isinstance(src, dict):
+                raise ValueError(
+                    f"YAML 'source' must be a mapping with a 'repo' key; got "
+                    f"{type(src).__name__}."
+                )
+            repo = src.get("repo")
+            if not isinstance(repo, str) or not repo:
+                raise ValueError(
+                    "YAML 'source.repo' must be a non-empty string (e.g. 'org/repo')."
+                )
+            resolved = resolve_source_with_metadata(
+                repo=repo,
+                path=src.get("path"),
+                ref=src.get("ref"),
+            )
+            resolved = adapt_resolved_source_if_needed(resolved)
+            tasks_dir = resolved.path
+            source_provenance = resolved.provenance
+        elif "tasks_dir" in raw:
+            # Legacy single-string format (backward compat).
+            ref = raw["tasks_dir"]
+            tasks_dir = Path(ref)
+            if not tasks_dir.exists() and ref in TASK_ALIASES:
+                tasks_dir = ensure_tasks(ref)
+        else:
+            raise ValueError("YAML config must have 'source' or 'tasks_dir'")
+
+        jobs_dir = Path(raw.get("jobs_dir", "jobs"))
+
+        # Parse prompts — YAML null becomes Python None. A bare string must be
+        # wrapped: otherwise Scene.single iterates it character-by-character into
+        # one garbage turn per character (mirrors the SDK YAML loader).
+        raw_prompts = raw.get("prompts")
+        prompts: list[str | None] | None = (
+            [raw_prompts] if isinstance(raw_prompts, str) else raw_prompts
+        )
+
+        agent_env_raw = raw.get("agent_env", {})
+        exclude = set(raw.get("exclude", []))
+        include = set(raw.get("include", []))
+        sandbox_user = raw.get("sandbox_user", "agent")
+        sandbox_locked_paths = raw.get("sandbox_locked_paths")
+        sandbox_setup_timeout = raw.get("sandbox_setup_timeout", 120)
+
+        agent_name = raw.get("agent", DEFAULT_AGENT)
+        # Optional environment-plane manifest path. Keeps YAML and CLI in
+        # sync so manifest-backed evaluations can be driven from either
+        # (#398).
+        env_manifest_raw = raw.get("environment_manifest")
+        env_manifest: EnvironmentManifest | None = None
+        if env_manifest_raw is not None:
+            from benchflow.environment.manifest import load_manifest
+
+            env_manifest = load_manifest(env_manifest_raw)
+        config = EvaluationConfig(
+            agent=agent_name,
+            model=effective_model(agent_name, raw.get("model")),
+            reasoning_effort=raw.get("reasoning_effort"),
+            environment=raw.get("environment", "docker"),
+            concurrency=raw.get("concurrency", 4),
+            build_concurrency=raw.get("build_concurrency"),
+            prompts=prompts,
+            agent_env=agent_env_raw,
+            retry=RetryConfig(max_retries=raw.get("max_retries", 2)),
+            skills_dir=str(Path(raw["skills_dir"])) if raw.get("skills_dir") else None,
+            sandbox_user=sandbox_user,
+            sandbox_locked_paths=sandbox_locked_paths,
+            sandbox_setup_timeout=sandbox_setup_timeout,
+            skip_agent_install=bool(raw.get("skip_install", False)),
+            agent_idle_timeout=raw.get(
+                "agent_idle_timeout_sec", raw.get("agent_idle_timeout", 600)
+            ),
+            context_root=raw.get("context_root"),
+            base_image_override=raw.get("base_image_override"),
+            exclude_tasks=exclude,
+            include_tasks=include,
+            skill_mode=raw.get("skill_mode", SKILL_MODE_NO_SKILL),
+            skill_creator_dir=(
+                str(Path(raw["skill_creator_dir"]))
+                if raw.get("skill_creator_dir")
+                else None
+            ),
+            self_gen_no_internet=bool(raw.get("self_gen_no_internet", False)),
+            job_mode=raw.get("job_mode", DEFAULT_JOB_MODE),
+            source_provenance=source_provenance,
+            usage_tracking=UsageTrackingConfig.from_mapping(raw),
+            environment_manifest=env_manifest,
+            config_override=raw.get("config_override"),
+            loop_strategy=raw.get("loop_strategy"),
+        )
+        return cls(tasks_dir=tasks_dir, jobs_dir=jobs_dir, config=config, **kwargs)
+
+    @classmethod
+    def _from_legacy_yaml(cls, raw: dict, **kwargs) -> Evaluation:
+        """Parse legacy-format YAML (agents + datasets style)."""
+        # Agent
+        agents = raw.get("agents", [{}])
+        agent_cfg = agents[0] if agents else {}
+        agent_name = agent_cfg.get("name", DEFAULT_AGENT)
+
+        # Model — keep provider prefix intact for downstream resolution
+        model = effective_model(agent_name, agent_cfg.get("model_name") or None)
+
+        # Environment
+        env_cfg = raw.get("environment", {})
+        environment = env_cfg.get("type", "docker")
+
+        # Agent env vars from environment.env
+        agent_env: dict[str, str] = {}
+        for entry in env_cfg.get("env", []):
+            if "=" in entry:
+                k, v = entry.split("=", 1)
+                # Expand ${VAR} references
+                v = os.path.expandvars(v)
+                agent_env[k] = v
+
+        # Datasets
+        datasets = raw.get("datasets", [{}])
+        tasks_dir = Path(datasets[0].get("path", "tasks"))
+
+        # Orchestrator
+        orch = raw.get("orchestrator", {})
+        concurrency = orch.get("n_concurrent_trials", 4)
+
+        jobs_dir = Path(raw.get("jobs_dir", "jobs"))
+        max_retries = (
+            raw.get("n_attempts", 1) - 1
+        )  # legacy n_attempts includes first try
+
+        # Skills dir (shared with benchflow-native format)
+        skills_dir_raw = raw.get("skills_dir")
+        skills_dir = str(Path(skills_dir_raw)) if skills_dir_raw else None
+        sandbox_user = raw.get("sandbox_user", "agent")
+        sandbox_locked_paths = raw.get("sandbox_locked_paths")
+        sandbox_setup_timeout = raw.get("sandbox_setup_timeout", 120)
+
+        # Map legacy include/exclude task filters. Accept both singular and
+        # plural spellings ("include"/"includes", "exclude"/"excludes") so
+        # ported configs do not silently lose their filtering (#500).
+        include: set[str] = set()
+        for key in ("include", "includes", "include_tasks"):
+            values = raw.get(key)
+            if values:
+                include.update(values)
+        exclude: set[str] = set()
+        for key in ("exclude", "excludes", "exclude_tasks"):
+            values = raw.get(key)
+            if values:
+                exclude.update(values)
+
+        config = EvaluationConfig(
+            agent=agent_name,
+            model=model,
+            reasoning_effort=agent_cfg.get(
+                "reasoning_effort", raw.get("reasoning_effort")
+            ),
+            environment=environment,
+            concurrency=concurrency,
+            agent_env=agent_env,
+            retry=RetryConfig(max_retries=max(0, max_retries)),
+            skills_dir=skills_dir,
+            sandbox_user=sandbox_user,
+            sandbox_locked_paths=sandbox_locked_paths,
+            sandbox_setup_timeout=sandbox_setup_timeout,
+            skip_agent_install=bool(agent_cfg.get("skip_install", False)),
+            agent_idle_timeout=raw.get(
+                "agent_idle_timeout_sec", raw.get("agent_idle_timeout", 600)
+            ),
+            context_root=raw.get("context_root"),
+            base_image_override=raw.get("base_image_override"),
+            include_tasks=include,
+            exclude_tasks=exclude,
+            skill_mode=raw.get("skill_mode", SKILL_MODE_NO_SKILL),
+            skill_creator_dir=(
+                str(Path(raw["skill_creator_dir"]))
+                if raw.get("skill_creator_dir")
+                else None
+            ),
+            self_gen_no_internet=bool(raw.get("self_gen_no_internet", False)),
+            usage_tracking=UsageTrackingConfig.from_mapping(raw),
+        )
+        return cls(tasks_dir=tasks_dir, jobs_dir=jobs_dir, config=config, **kwargs)
+
+    def _get_task_dirs(self) -> list[Path]:
+        """Get all valid task directories.
+
+        A directory whose ``task.md`` *exists but fails to parse* is a malformed
+        task, not a non-task: in the single-task case that is a hard error (the
+        user named exactly one thing and it is broken); in the batch case it is
+        loudly warned and skipped (a typo must never make a task silently vanish
+        from a 50-task suite, #3) while the healthy tasks still run. A task.md
+        that PARSES but is structurally incomplete (e.g. a schema-only fixture)
+        keeps its existing silent skip.
+        """
+        from benchflow._utils.task_authoring import task_document_parse_error
+
+        # A valid task at the root → that IS the whole job (single-task input).
+        if _is_task_dir(self._tasks_dir):
+            if self._tasks_dir.name in self._config.exclude_tasks:
+                return []
+            if (
+                self._config.include_tasks
+                and self._tasks_dir.name not in self._config.include_tasks
+            ):
+                return []
+            return [self._tasks_dir]
+
+        # Batch input: collect valid child tasks; warn (don't silently drop) on
+        # any child whose task.md fails to PARSE. Selection filters are applied
+        # first, so excluded dirs are never warned about. A child task.md that
+        # PARSES but is structurally incomplete (schema-only fixture) keeps its
+        # silent skip.
+        selected: list[Path] = []
+        for d in sorted(self._tasks_dir.iterdir()):
+            if not d.is_dir():
+                continue
+            if d.name in self._config.exclude_tasks:
+                continue
+            if self._config.include_tasks and d.name not in self._config.include_tasks:
+                continue
+            if _is_task_dir(d):
+                selected.append(d)
+                continue
+            task_md = d / "task.md"
+            if task_md.is_file():
+                parse_error = task_document_parse_error(task_md)
+                if parse_error is not None:
+                    logger.warning(
+                        "Skipping malformed task %r: %s", d.name, parse_error
+                    )
+
+        # A malformed task.md at the tasks-dir ROOT is a hard error ONLY when no
+        # valid child tasks were found — i.e. the root was meant as a single
+        # task and it is broken. If the dir is a batch container that also
+        # happens to carry a stray broken root task.md, warn but still run the
+        # healthy children rather than aborting the whole batch.
+        root_task_md = self._tasks_dir / "task.md"
+        if root_task_md.is_file():
+            parse_error = task_document_parse_error(root_task_md)
+            if parse_error is not None:
+                if selected:
+                    logger.warning(
+                        "Ignoring malformed task.md at the tasks-dir root %r: %s",
+                        self._tasks_dir.name,
+                        parse_error,
+                    )
+                else:
+                    raise MalformedTaskError(f"{root_task_md}: {parse_error}")
+        return selected
+
+    def _get_completed_tasks(self) -> dict[str, dict]:
+        """Load tasks that already have results with rewards or verifier errors.
+
+        Scoreless results whose verifier error is infra-retryable (per
+        ``RetryConfig.should_retry_verifier_error``) are not reused: the
+        verifier never scored the frozen workspace, so the task re-runs.
+
+        Scoped to the current job directory (``_jobs_dir / _job_name``) to
+        prevent cross-job contamination. When multiple result.json files exist
+        for the same task (retry artifacts), a scored result always wins over
+        a scoreless verifier error; otherwise the newest artifact wins.
+
+        Guards ENG-160: orphan retry artifacts no longer pollute resume.
+        """
+        job_dir = self._jobs_dir / self._job_name
+        if not job_dir.exists():
+            return {}
+        # A completed score is durable evidence and must not be displaced by a
+        # newer scoreless retry artifact. Within the same scored/unscored tier,
+        # prefer recency and use the path as a deterministic tie-breaker.
+        best: dict[str, tuple[tuple[bool, float, str], dict]] = {}
+        for rfile in job_dir.rglob("result.json"):
+            try:
+                r = json.loads(rfile.read_text())
+                task = r["task_name"]
+                if r.get("rewards") is not None or r.get("verifier_error"):
+                    rewards = r.get("rewards")
+                    if rewards is not None and not isinstance(rewards, dict):
+                        logger.warning(
+                            "Malformed rewards field in %s for task %r: "
+                            "expected dict or null, got %s %r — "
+                            "treating as no reward (task will count as errored)",
+                            rfile,
+                            task,
+                            type(rewards).__name__,
+                            rewards,
+                        )
+                    rank = (
+                        r.get("rewards") is not None,
+                        rfile.stat().st_mtime,
+                        str(rfile),
+                    )
+                    prev = best.get(task)
+                    if prev is None or rank >= prev[0]:
+                        best[task] = (rank, r)
+            except Exception as e:
+                logger.debug(f"Skipping corrupt result file {rfile}: {e}")
+        completed: dict[str, dict] = {}
+        # Re-running an errored task is only safe when rollouts are
+        # independent. A sequential-shared job advances one persisted learner
+        # state in task order, so replaying an earlier task after later tasks
+        # committed their skills would corrupt the learning curve; there the
+        # errored result stays reused, matching the pre-existing behavior.
+        rerun_ok = self._config.job_mode != "sequential-shared"
+        for task, (_rank, r) in best.items():
+            if r.get("verifier_error"):
+                # A scoreless result whose verifier error is infra-retryable
+                # (same taxonomy as the within-run retry) records no signal
+                # about the task; reusing it pins a lost score forever.
+                retryable = self._config.retry.should_retry_verifier_error(
+                    r["verifier_error"]
+                )
+                if rerun_ok and r.get("rewards") is None and retryable:
+                    logger.info(
+                        f"Re-running verifier-errored task on resume: {task} "
+                        f"({truncate_end(r['verifier_error'], 80)})"
+                    )
+                    continue
+                logger.info(
+                    f"Reusing completed verifier-errored task on resume: {task} "
+                    f"({truncate_end(r['verifier_error'], 80)})"
+                )
+            completed[task] = r
+        return completed
+
+    def _prune_docker(self):
+        """Clean up Docker resources owned by BenchFlow.
+
+        Scoped via ``--filter label=benchflow.owned=true`` so we only remove
+        containers/networks our own compose files created. Unrelated Docker
+        workloads on the same host are left untouched. The label is applied in
+        ``sandbox/_compose_files/docker-compose-base.yaml``.
+
+        Serialized via ``_PRUNE_LOCK``: parallel retries from high-concurrency
+        batches would otherwise each kick off a 30s-timeout docker CLI call,
+        all blocking on the same daemon. Non-blocking acquire — if another
+        prune is in flight we just skip, since it will catch the same garbage.
+        """
+        if self._config.environment != "docker":
+            return
+        if not _PRUNE_LOCK.acquire(blocking=False):
+            return
+        label_filter = f"label={BENCHFLOW_OWNED_LABEL}"
+        try:
+            subprocess.run(
+                [
+                    "docker",
+                    "container",
+                    "prune",
+                    "-f",
+                    "--filter",
+                    label_filter,
+                ],
+                capture_output=True,
+                timeout=30,
+            )
+            subprocess.run(
+                [
+                    "docker",
+                    "network",
+                    "prune",
+                    "-f",
+                    "--filter",
+                    label_filter,
+                ],
+                capture_output=True,
+                timeout=30,
+            )
+        except Exception as e:
+            logger.warning(f"Docker prune failed: {e}")
+        finally:
+            _PRUNE_LOCK.release()
+
+    def _enrich_payload_with_persisted_timing(
+        self, payload: dict, result: RolloutResult
+    ) -> None:
+        """Copy ``timing`` from the rollout's on-disk result.json into payload.
+
+        ``RolloutResult`` does not carry phase timing, but the rollout writer
+        (``rollout.py``) persists it under ``rollout_dir/result.json``. Reading
+        it back lets ``phase_timing_summary`` aggregate phase totals for fresh
+        runs (issue #501). Best-effort: legacy SDK paths that mock the writer
+        — or any case where no rollout_name is set — silently leave timing
+        absent rather than crash summary generation.
+        """
+        if "timing" in payload:
+            return
+        rollout_name = getattr(result, "rollout_name", "") or ""
+        if not rollout_name:
+            return
+        rfile = self._jobs_dir / self._job_name / rollout_name / "result.json"
+        if not rfile.exists():
+            return
+        try:
+            persisted = json.loads(rfile.read_text())
+        except (json.JSONDecodeError, OSError) as e:
+            logger.debug("Could not read persisted timing from %s: %s", rfile, e)
+            return
+        timing = persisted.get("timing")
+        if isinstance(timing, dict):
+            payload["timing"] = timing
+
+    async def _run_single_task(
+        self, task_dir: Path, cfg: EvaluationConfig
+    ) -> RolloutResult:
+        """Execute one rollout via Rollout.
+
+        In sequential-shared mode the per-rollout learner skill dirs override
+        the static config: the rollout starts from the LearnerStore's evolved
+        skill set (``_learner_skills_dir``) and its agent-evolved skills are
+        captured back through ``export_generated_skills_to``.
+        """
+        from benchflow._utils.benchmark_repos import task_source_provenance
+        from benchflow.rollout import Rollout, RolloutConfig
+
+        dataset = None
+        if cfg.dataset_name:
+            dataset = {"name": cfg.dataset_name, "version": cfg.dataset_version}
+        task_digest_value = (
+            cfg.dataset_task_digests.get(task_dir.name) if cfg.dataset_name else None
+        )
+        if task_digest_value is None:
+            # Dev runs (--tasks-dir / --source-repo) stamp a live-computed
+            # digest so every trajectory stays attributable to the exact
+            # task content it ran, not just a directory name.
+            from benchflow._utils.task_authoring import task_digest
+
+            try:
+                task_digest_value = task_digest(task_dir)
+            except (OSError, ValueError, UnicodeError) as e:
+                logger.debug("Could not compute task digest for %s: %s", task_dir, e)
+        skills_dir = (
+            str(self._learner_skills_dir)
+            if self._learner_skills_dir is not None
+            else cfg.skills_dir
+        )
+        skill_mode = (
+            SKILL_MODE_WITH_SKILL
+            if self._learner_skills_dir is not None
+            else cfg.skill_mode
+        )
+        export_to = (
+            str(self._learner_export_dir)
+            if self._learner_export_dir is not None
+            else None
+        )
+        environment_manifest = cfg.environment_manifest
+        if environment_manifest is None:
+            environment_manifest = _environment_manifest_from_task_document(task_dir)
+        rollout_config = RolloutConfig.from_legacy(
+            task_path=task_dir,
+            agent=cfg.agent,
+            model=cfg.model,
+            reasoning_effort=cfg.reasoning_effort,
+            prompts=cfg.prompts,
+            agent_env=cfg.agent_env,
+            job_name=self._job_name,
+            jobs_dir=str(self._jobs_dir),
+            concurrency=cfg.concurrency,
+            environment=cfg.environment,
+            environment_manifest=environment_manifest,
+            config_override=cfg.config_override,
+            skills_dir=skills_dir,
+            sandbox_user=cfg.sandbox_user,
+            sandbox_locked_paths=cfg.sandbox_locked_paths,
+            sandbox_setup_timeout=cfg.sandbox_setup_timeout,
+            skip_agent_install=cfg.skip_agent_install,
+            agent_idle_timeout=cfg.agent_idle_timeout,
+            context_root=cfg.context_root,
+            base_image_override=cfg.base_image_override,
+            skill_mode=skill_mode,
+            skill_creator_dir=cfg.skill_creator_dir,
+            self_gen_no_internet=cfg.self_gen_no_internet,
+            export_generated_skills_to=export_to,
+            source_provenance=task_source_provenance(cfg.source_provenance, task_dir),
+            dataset=dataset,
+            task_digest=task_digest_value,
+            usage_tracking=cfg.usage_tracking,
+            loop_strategy=cfg.loop_strategy,
+        )
+        if skill_mode == SKILL_MODE_SELF_GEN:
+            from benchflow.self_gen import run_self_gen
+
+            return await run_self_gen(rollout_config)
+        rollout = await Rollout.create(rollout_config)
+        # Expose the live rollout to the eval dashboard's activity cell —
+        # a same-process poll of the session's heartbeat counters, see
+        # benchflow._utils.live_activity.
+        from benchflow._utils import live_activity
+
+        live_activity.register(task_dir.name, rollout)
+        try:
+            # Rollout.run() enforces its own host-side hard deadline against
+            # awaits wedged below the phase-level timeouts — see
+            # benchflow.rollout._deadline. A trip surfaces here as a normal
+            # infra-retryable error result.
+            return await rollout.run()
+        finally:
+            live_activity.unregister(task_dir.name)
+
+    async def _run_single_task_legacy(
+        self, task_dir: Path, cfg: EvaluationConfig
+    ) -> RunResult:
+        """SDK.run() path — used when _sdk is mocked in tests.
+
+        Note: this legacy path does NOT thread the continual-learning skill
+        dirs (``_learner_skills_dir`` / ``_learner_export_dir``), so it
+        cannot materialize or capture evolved skills. It is test-only today;
+        a real continual-learning run must go through ``_run_single_task``.
+        """
+        from benchflow._utils.benchmark_repos import task_source_provenance
+
+        return await self._sdk.run(
+            task_path=task_dir,
+            agent=cfg.agent,
+            model=cfg.model,
+            reasoning_effort=cfg.reasoning_effort,
+            prompts=cfg.prompts,
+            agent_env=cfg.agent_env,
+            job_name=self._job_name,
+            jobs_dir=str(self._jobs_dir),
+            concurrency=cfg.concurrency,
+            environment=cfg.environment,
+            skills_dir=cfg.skills_dir,
+            sandbox_user=cfg.sandbox_user,
+            sandbox_locked_paths=cfg.sandbox_locked_paths,
+            sandbox_setup_timeout=cfg.sandbox_setup_timeout,
+            agent_idle_timeout=cfg.agent_idle_timeout,
+            context_root=cfg.context_root,
+            base_image_override=cfg.base_image_override,
+            skill_mode=cfg.skill_mode,
+            skill_creator_dir=cfg.skill_creator_dir,
+            self_gen_no_internet=cfg.self_gen_no_internet,
+            source_provenance=task_source_provenance(cfg.source_provenance, task_dir),
+            usage_tracking=cfg.usage_tracking,
+        )
+
+    async def _run_task(self, task_dir: Path) -> RunResult:
+        """Run a single task with retries."""
+        cfg = self._config
+        last_result: RunResult | None = None
+
+        for attempt in range(1, cfg.retry.max_retries + 2):
+            if attempt > 1:
+                delay = cfg.retry.backoff_delay(attempt - 1)
+                logger.info(f"Retry backoff: {delay:.1f}s before attempt {attempt}")
+                await asyncio.sleep(delay)
+                self._prune_docker()
+            # Use legacy SDK path if _sdk has been replaced (test compat)
+            from benchflow.sdk import SDK
+
+            if not isinstance(self._sdk, SDK):
+                result = await self._run_single_task_legacy(task_dir, cfg)
+            else:
+                result = await self._run_single_task(task_dir, cfg)
+            last_result = result
+
+            retryable_agent_error = cfg.retry.should_retry(
+                result.error,
+                category=result.error_category,
+            )
+            retryable_verifier_error = cfg.retry.should_retry_verifier_error(
+                result.verifier_error
+            )
+
+            # If succeeded, verifier-errored (terminal), or non-retryable, stop.
+            # Retryable infra/idle errors win over fallback rewards so a hung
+            # agent lane does not become permanent failed-task data at scale.
+            if not (retryable_agent_error or retryable_verifier_error):
+                break
+
+            if attempt <= cfg.retry.max_retries:
+                err_preview = truncate_end(
+                    result.error or result.verifier_error or "", 60
+                )
+                logger.info(
+                    f"Retrying {task_dir.name} (attempt {attempt + 1}): {err_preview}"
+                )
+
+        # The loop always runs at least once (range(1, max_retries + 2)
+        # has min 1 iter), so last_result is guaranteed set.
+        assert last_result is not None
+        return last_result
+
+    @staticmethod
+    def _fire_progress(callback, *args) -> None:
+        """Invoke a UI-progress hook, swallowing any error.
+
+        A live-display callback must never abort or perturb the run, so failures
+        are logged at debug and ignored.
+        """
+        if callback is None:
+            return
+        try:
+            callback(*args)
+        except Exception as exc:
+            # Display is best-effort: a render bug must never abort the run.
+            logger.debug("progress callback failed: %s", exc)
+
+    def _log_and_report(self, td: Path, result: RunResult) -> None:
+        """Log one rollout's outcome and fire the on_result callback."""
+        reward = result.rewards.get("reward") if result.rewards else None
+        status = "PASS" if reward == 1 else ("FAIL" if reward is not None else "ERR")
+        err_msg = result.error or result.verifier_error
+        err = f" ({truncate_end(err_msg, 50)})" if err_msg else ""
+        # Show the fractional reward on scored lines: pass/fail binarizes at
+        # reward==1, so without it a 0.3 rubric score reads as a flat 0.
+        reward_part = (
+            f"reward={reward:.2f}, "
+            if isinstance(reward, (int, float)) and not isinstance(reward, bool)
+            else ""
+        )
+        logger.info(
+            f"[{status}] {td.name} ({reward_part}tools={result.n_tool_calls}){err}"
+        )
+        self._fire_progress(self._on_result, td.name, result)
+
+    async def _run_parallel_independent(
+        self, remaining: list[Path]
+    ) -> list[tuple[str, RunResult]]:
+        """The default schedule — rollouts run concurrently and isolated."""
+        cfg = self._config
+        # Console heartbeat auto-gate: interleaved per-task progress lines are
+        # noise at high concurrency, so the sessions' heartbeat defaults off
+        # for multi-concurrency jobs. An explicit BENCHFLOW_PROGRESS=on/off
+        # from the operator always wins (checked first in the session layer).
+        os.environ["BENCHFLOW_PROGRESS_AUTO"] = "1" if cfg.concurrency <= 1 else "0"
+        # Floor at 1: Semaphore(0) deadlocks on first acquire. eval-create already
+        # rejects <1 at plan time, but this guards every other caller (skills eval,
+        # SDK) against a silent forever-hang on a bad concurrency.
+        sem = asyncio.Semaphore(max(1, cfg.concurrency))
+
+        breaker = ApiErrorCircuitBreaker()
+
+        async def bounded(td: Path) -> tuple[str, RunResult]:
+            async with sem:
+                if breaker.tripped:
+                    result = RunResult(task_name=td.name, error=breaker.skip_error())
+                    self._log_and_report(td, result)
+                    return td.name, result
+                # Jitter start to avoid SSH/docker-daemon storms at high
+                # concurrency. The window scales linearly with --concurrency so
+                # the average start rate stays around 2 tasks/sec; the previous
+                # 10s cap was too tight for c >= 30 (≈10 starts/sec flooded the
+                # daemon's compose-up handler).
+                import random
+
+                if cfg.concurrency > 16:
+                    jitter_max = max(cfg.concurrency / 2, 8.0)
+                    await asyncio.sleep(random.uniform(0, jitter_max))
+                self._fire_progress(self._on_task_start, td.name)
+                result = await self._run_task(td)
+                breaker.record(result)
+                self._log_and_report(td, result)
+                return td.name, result
+
+        results_or_errors = await asyncio.gather(
+            *[bounded(td) for td in remaining],
+            return_exceptions=True,
+        )
+
+        # Separate successful results from unexpected exceptions
+        pairs: list[tuple[str, RunResult]] = []
+        for i, r in enumerate(results_or_errors):
+            if isinstance(r, BaseException):
+                if isinstance(r, (asyncio.CancelledError, KeyboardInterrupt)):
+                    raise r
+                task_name = remaining[i].name
+                logger.error(f"[ERR] {task_name}: unexpected exception: {r}")
+                err_result = RunResult(task_name=task_name, error=f"Unexpected: {r}")
+                # _run_task raised after on_task_start fired, so the live
+                # dashboard still has this task "running" — fire on_result to
+                # remove it and count it errored.
+                self._fire_progress(self._on_result, task_name, err_result)
+                pairs.append((task_name, err_result))
+            else:
+                pairs.append(r)
+        return pairs
+
+    async def _run_sequential_shared(
+        self, remaining: list[Path]
+    ) -> list[tuple[str, RunResult]]:
+        """The continual-learning schedule — capability 5.
+
+        Rollouts run strictly in order over one persistent, generation-versioned
+        ``LearnerStore`` (memory + skills). Each rollout:
+
+        1. **reads** the store's current skills and injects them as its
+           ``skills_dir``, so it starts from the *evolved* skill set;
+        2. **runs**, with ``export_generated_skills_to`` set so the skills the
+           agent generated/evolved are captured;
+        3. **records** the before/after skills as ``memory_delta`` on a tree
+           node, giving the Memory-space scorer its writer; and
+        4. **commits** the captured skills to the store as the next
+           ``LearnerState`` — so rollout N+1 inherits them.
+
+        The rollout's reward is offered as a learning-curve metric: an
+        improvement stamps a new generation, a regression is rejected and the
+        store stays at the better generation. The learner store is the one
+        snapshot layer that does NOT roll back with a ``Branch`` — this
+        curve-driven rollback is a separate, generation-scoped operation.
+
+        Concurrency is deliberately ignored here: a shared mutable store cannot
+        be written by overlapping rollouts.
+        """
+        import tempfile
+
+        from benchflow.learner_skills import materialize_skills
+
+        # __init__ is the sole owner: it constructs the store whenever
+        # job_mode is sequential-shared, the only mode that reaches here.
+        store = self.learner_store
+        assert store is not None, "sequential-shared job must have a learner_store"
+
+        # Per-run scoring scratch — reset so re-running the same Evaluation
+        # does not score stale nodes carried over from a prior invocation.
+        self.learner_nodes = []
+
+        pairs: list[tuple[str, RunResult]] = []
+        with tempfile.TemporaryDirectory(prefix="bf-learner-") as work:
+            work_root = Path(work)
+            for i, td in enumerate(remaining):
+                # 1. READ — materialize the store's current skills so the
+                # rollout starts from the evolved set.
+                before_state = store.current()
+                before_generation = store.generation
+                skills_dir = work_root / f"rollout-{i}-skills"
+                export_dir = work_root / f"rollout-{i}-evolved"
+                materialize_skills(before_state, skills_dir)
+                self._learner_skills_dir = skills_dir
+                self._learner_export_dir = export_dir
+
+                self._fire_progress(self._on_task_start, td.name)
+                try:
+                    result = await self._run_task(td)
+                except (asyncio.CancelledError, KeyboardInterrupt):
+                    raise
+                except Exception as e:  # mirror the parallel path's catch
+                    logger.error(f"[ERR] {td.name}: unexpected exception: {e}")
+                    err_result = RunResult(task_name=td.name, error=f"Unexpected: {e}")
+                    self._fire_progress(self._on_result, td.name, err_result)
+                    pairs.append((td.name, err_result))
+                    continue
+                finally:
+                    self._learner_skills_dir = None
+                    self._learner_export_dir = None
+
+                self._log_and_report(td, result)
+                pairs.append((td.name, result))
+
+                await self._commit_learner_generation(
+                    store, td, result, before_state, before_generation, export_dir
+                )
+        return pairs
+
+    async def _commit_learner_generation(
+        self,
+        store: LearnerStore,
+        td: Path,
+        result: RunResult,
+        before_state: LearnerState,
+        before_generation: int,
+        export_dir: Path,
+    ) -> None:
+        """Capture a rollout's evolved skills and commit the next generation.
+
+        Builds the ``memory_delta`` record the Memory-space scorer reads, then
+        offers the captured (memory + skills) state to the store: an
+        improvement stamps a new generation, a regression is reverted. An
+        errored rollout (no reward) leaves the store untouched.
+
+        Persists the store and stamps generation metadata onto the result
+        artifact (which inherited from / which it produced) so a resumed job
+        can audit the learning curve across processes — see issue #394.
+        """
+        # Skip everything when the skill export itself failed (#389 follow-up).
+        # The export dir is half-written and ``result.evolved_skills`` is None,
+        # so committing would poison the LearnerStore with an empty/partial
+        # generation even though the verifier may have produced rewards.
+        if result.export_error is not None:
+            logger.warning(
+                f"Learner store: {td.name} skill export failed — "
+                f"skipping generation commit, staying at generation "
+                f"{store.generation}"
+            )
+            return
+        # 2/3. CAPTURE — the skills the agent generated/evolved. Prefer the
+        # result's own field (the real Rollout populates it); fall back to
+        # reading the export dir directly.
+        evolved_skills = evolved_skills_for_result(result, export_dir)
+        expected_skills = expected_skills_for_task(td)
+        # The Memory scorer must NOT derive an answer key from the agent's own
+        # diff — that would make precision/recall a tautology. Only a
+        # task-authored fixture may switch the scorer from activity to
+        # correctness grading.
+        after_skills, delta = memory_delta_from_skills(
+            before_state=before_state,
+            evolved_skills=evolved_skills,
+            expected_skills=expected_skills,
+        )
+
+        # Record the delta on this rollout's tree node so the Memory-space
+        # scorer (rewards/memory_scorer.py) has its writer — the two halves
+        # of capability 5 connected end-to-end.
+        node = self._learner_node(td)
+        result_path = (
+            self._jobs_dir / self._job_name / result.rollout_name / "result.json"
+            if result.rollout_name
+            else None
+        )
+        await attach_memory_score(
+            result=result,
+            node=node,
+            delta=delta,
+            result_path=result_path,
+        )
+
+        # 4. COMMIT — offer the evolved (memory + skills) state to the store.
+        reward = result.rewards.get("reward") if result.rewards else None
+        committed_generation: int | None = None
+        kept: bool | None = None
+        if reward is not None:
+            # Commit the normalized `after_skills` (str-valued) — not the raw
+            # `evolved_skills` — so the committed store state is byte-identical
+            # to the `memory_delta` recorded above.
+            next_state = LearnerState(
+                memory=before_state.memory,
+                skills=after_skills,
+            )
+            kept = store.commit_or_revert(next_state, metric=float(reward))
+            if kept:
+                committed_generation = store.generation
+            else:
+                logger.info(
+                    f"Learner store: {td.name} regressed (reward={reward}) — "
+                    f"reverted, staying at generation {store.generation}"
+                )
+
+        # Persist the store after every rollout so an interrupted job can
+        # resume from the last committed generation (#394). We save even when
+        # the rollout did not commit (errored or reverted) so the snapshot's
+        # pointer matches the live store.
+        self._save_learner_store()
+
+        # Stamp generation metadata on the result artifact so a resumed run
+        # can audit which rollout inherited which store generation.
+        if result_path is not None:
+            patch_learner_generation_artifact(
+                result_path,
+                inherited_from=before_generation,
+                produced=committed_generation,
+                committed=kept,
+            )
+
+    def _learner_node(self, td: Path) -> RolloutNode:
+        """Return a fresh tree node for one continual-learning rollout.
+
+        Each sequential-shared rollout is one node carrying that rollout's
+        ``memory_delta``; the Job keeps them on ``learner_nodes`` so the
+        Memory-space scorer can score every rollout after the run.
+        """
+        # Index-prefixed so two rollouts of the same task name still get
+        # distinct node ids.
+        node = RolloutNode(id=f"{len(self.learner_nodes)}-{td.name}")
+        self.learner_nodes.append(node)
+        return node
+
+    def _maybe_start_daytona_reap(self) -> None:
+        """Fire-and-forget auto-reap of orphaned Daytona sandboxes (issue: leakage at scale).
+
+        Gated by ``BENCHFLOW_DAYTONA_AUTO_REAP`` (default on; any of
+        ``0``/``false``/``no``/``off`` case-insensitively disables it).
+        Conservative TTLs (24h general / 2h failed states) plus an idle-activity
+        guard mean concurrent live runs are never reaped. Runs in a daemon
+        thread so eval startup never blocks or fails on reaping.
+        """
+        if self._config.environment != "daytona":
+            return
+        if os.environ.get("BENCHFLOW_DAYTONA_AUTO_REAP", "1").strip().lower() in {
+            "0",
+            "false",
+            "no",
+            "off",
+        }:
+            return
+
+        def _reap() -> None:
+            try:
+                from benchflow.sandbox.daytona import reap_stale_sandboxes
+
+                counts = reap_stale_sandboxes()
+                if counts["deleted"] or counts["failed"]:
+                    logger.info(
+                        "Daytona auto-reap: %s stale sandboxes deleted (%s failed)",
+                        counts["deleted"],
+                        counts["failed"],
+                    )
+            except Exception as e:
+                logger.debug("Daytona auto-reap skipped: %s", e)
+
+        threading.Thread(target=_reap, name="daytona-auto-reap", daemon=True).start()
+
+    async def run(self) -> EvaluationResult:
+        """Execute the job."""
+        self._maybe_start_daytona_reap()
+        task_dirs = self._get_task_dirs()
+        if not task_dirs:
+            # Fail fast on an empty selection (#407). Silently writing a
+            # 0/0 summary.json would surface as an apparently successful
+            # eval in downstream dashboards and release evidence.
+            cfg = self._config
+            detail_parts = [f"tasks_dir={self._tasks_dir}"]
+            if cfg.include_tasks:
+                detail_parts.append(f"include={sorted(cfg.include_tasks)}")
+            if cfg.exclude_tasks:
+                detail_parts.append(f"exclude={sorted(cfg.exclude_tasks)}")
+            raise EmptyTaskSelectionError(
+                "No tasks selected after include/exclude filtering "
+                f"({', '.join(detail_parts)}). Refusing to publish an "
+                "empty 0/0 summary."
+            )
+        completed = self._get_completed_tasks()
+        remaining = [d for d in task_dirs if d.name not in completed]
+
+        # A resumed sequential-shared job rebuilds the LearnerStore from the
+        # per-job snapshot under ``<job>/learner_store.json``. If that file
+        # is missing while completed rollouts exist, the run cannot honestly
+        # continue the learning curve — the older rollouts' evolved skills
+        # are lost. Fail closed (#394) rather than silently mix old result
+        # rows with a fresh empty store.
+        if completed and self._config.job_mode == "sequential-shared":
+            snapshot = self._learner_store_path()
+            if not snapshot.is_file():
+                raise RuntimeError(
+                    f"Cannot resume sequential-shared job: "
+                    f"{len(completed)} completed task(s) but no persisted "
+                    f"LearnerStore at {snapshot}. The learning curve would "
+                    f"restart at generation 0 and earlier rollouts' evolved "
+                    f"skills are lost. Use a fresh jobs_dir for a clean run, "
+                    f"or restore the snapshot from a backup."
+                )
+            assert self.learner_store is not None
+            logger.info(
+                f"Resuming sequential-shared job at generation "
+                f"{self.learner_store.generation} "
+                f"({len(completed)} completed task(s), "
+                f"{len(remaining)} remaining)"
+            )
+
+        # Warn if resuming with different config than completed tasks
+        if completed:
+            _check_resume_mismatch(self._jobs_dir / self._job_name, self._config)
+
+        self._jobs_dir.mkdir(parents=True, exist_ok=True)
+        self._prune_docker()
+
+        cfg = self._config
+
+        if cfg.build_concurrency is not None and cfg.environment == "docker":
+            from benchflow.sandbox.docker import DockerSandbox
+
+            DockerSandbox.set_build_concurrency(cfg.build_concurrency)
+
+        # The denominator is the number of tasks that will appear in the summary:
+        # the resumed-complete set plus the to-run set (disjoint by construction).
+        # This equals len(task_dirs) for a clean run, but a resume whose jobs_dir
+        # holds results from a *wider* prior selection has more completed rows than
+        # the current selection — keying off len(task_dirs) there rendered nonsense
+        # like "11/1 · 1100%" and a denominator that disagreed with the final
+        # "Score: 8/11". completed-plus-remaining is exactly what gets scored.
+        planned_total = len(completed) + len(remaining)
+        logger.info(
+            f"Job: {planned_total} tasks, {len(completed)} done, "
+            f"{len(remaining)} to run (concurrency={cfg.concurrency})"
+        )
+        # Hand the live dashboard an honest denominator: total / already-done /
+        # to-run. Resumed-complete tasks fold in below without a finish event, so
+        # a finish-event-only counter would mis-read the total on resume. Pass the
+        # resumed tasks' (passed, failed, errored) breakdown too, so the live
+        # counts + pass-rate cover the whole job, not just this process's tasks.
+        self._fire_progress(
+            self._on_plan,
+            planned_total,
+            len(completed),
+            len(remaining),
+            _classify_completed_outcomes(completed),
+        )
+
+        start = time.time()
+
+        if cfg.job_mode == "sequential-shared":
+            pairs = await self._run_sequential_shared(remaining)
+        else:
+            pairs = await self._run_parallel_independent(remaining)
+        self._prune_docker()
+        elapsed = time.time() - start
+
+        all_results: dict[str, dict] = {}
+        for task, data in completed.items():
+            all_results[task] = data
+        for name, result in pairs:
+            payload = rollout_result_payload(
+                result,
+                source_provenance=cfg.source_provenance,
+                tasks_dir=self._tasks_dir,
+                task_name=name,
+            )
+            # ``rollout_result_payload`` is RolloutResult-driven and so cannot
+            # see ``timing`` (it lives only in the persisted result.json).
+            # Pull it from disk so phase-timing aggregates cover fresh pairs
+            # the same way they cover resumed tasks (issue #501).
+            self._enrich_payload_with_persisted_timing(payload, result)
+            all_results[name] = payload
+
+        # EvaluationResult is the score/invariant view. summary.json is the
+        # audit view consumed by result checkers, so verifier evidence remains
+        # visible there even when the score view gives agent errors precedence.
+        score_counts = count_score_outcomes(all_results.values())
+        audit_counts = count_audit_outcomes(all_results.values())
+        memory, memory_scores = memory_summary(all_results)
+        # Per-task failure evidence for the CLI's final block — FAILED (scored,
+        # reward != 1) tasks only, from data already in memory. Sorted by name
+        # so the printed lines are deterministic across resume/concurrency.
+        task_failures = [
+            TaskFailure(
+                task_name=name,
+                rewards=r.get("rewards"),
+                verifier_error=r.get("verifier_error"),
+                # `or None`: RolloutResult defaults rollout_name to "" — don't
+                # let that masquerade as a resolvable rollout dir.
+                rollout_name=r.get("rollout_name") or None,
+            )
+            for name, r in sorted(all_results.items())
+            if classify_score_outcome(r) == "failed"
+        ]
+        job_result = EvaluationResult(
+            job_name=self._job_name,
+            config=cfg,
+            # Score counts cover one entry per scored rollout. Skill-eval expands
+            # a single task into multiple rollouts (baseline/skill x trials), so
+            # the denominator must be the number of results, not task dirs, or the
+            # invariant below (and every pass-rate/percentage) is wrong.
+            total=len(all_results),
+            passed=score_counts["passed"],
+            failed=score_counts["failed"],
+            errored=score_counts["errored"],
+            verifier_errored=score_counts["verifier_errored"],
+            elapsed_sec=elapsed,
+            memory_score=memory["avg_score"],
+            memory_scores=memory_scores,
+            task_failures=task_failures,
+            mean_reward=mean_scored_reward(all_results.values()),
+        )
+
+        assert (
+            job_result.passed
+            + job_result.failed
+            + job_result.errored
+            + job_result.verifier_errored
+            == job_result.total
+        ), (
+            f"Counting bug: {job_result.passed}+{job_result.failed}+{job_result.errored}+"
+            f"{job_result.verifier_errored} != {job_result.total}"
+        )
+
+        # Count error categories across all results for summary diagnostics.
+        error_category_counts: dict[str, int] = {}
+        verifier_error_category_counts: dict[str, int] = {}
+        for r in all_results.values():
+            cat = r.get("error_category") or classify_error(r.get("error"))
+            if cat:
+                error_category_counts[cat] = error_category_counts.get(cat, 0) + 1
+            vcat = r.get("verifier_error_category") or classify_verifier_error(
+                r.get("verifier_error")
+            )
+            if vcat:
+                verifier_error_category_counts[vcat] = (
+                    verifier_error_category_counts.get(vcat, 0) + 1
+                )
+
+        # Save summary
+        summary = {
+            "job_name": self._job_name,
+            "agent": cfg.agent,
+            "model": cfg.model,
+            "environment": cfg.environment,
+            "concurrency": cfg.concurrency,
+            "agent_idle_timeout_sec": cfg.agent_idle_timeout,
+            "usage_tracking": cfg.usage_tracking.with_env_defaults().to_config_artifact(),
+            "loop": loop_block(cfg.loop_strategy),
+            "total": job_result.total,
+            "passed": audit_counts["passed"],
+            "failed": audit_counts["failed"],
+            "errored": audit_counts["errored"],
+            "pass": audit_counts["passed"],
+            "fail": audit_counts["failed"],
+            "error": audit_counts["errored"],
+            "verifier_errored": audit_counts["verifier_errored"],
+            "idle_timeout": error_category_counts.get(IDLE_TIMEOUT, 0),
+            "error_categories": error_category_counts or None,
+            "verifier_error_categories": verifier_error_category_counts or None,
+            "score": f"{pass_rate(passed=audit_counts['passed'], total=job_result.total):.1%}",
+            "score_ratio": pass_rate(
+                passed=audit_counts["passed"], total=job_result.total
+            ),
+            "score_excl_errors": f"{pass_rate_excl_errors(passed=audit_counts['passed'], failed=audit_counts['failed']):.1%}",
+            "score_excl_errors_ratio": pass_rate_excl_errors(
+                passed=audit_counts["passed"], failed=audit_counts["failed"]
+            ),
+            "mean_reward": job_result.mean_reward,
+            "elapsed_sec": elapsed,
+            "memory_score": job_result.memory_score,
+            "memory_score_coverage": (
+                len(memory_scores) / job_result.total if job_result.total else 0.0
+            ),
+            "memory": memory,
+            "memory_scores": memory_scores,
+            **skill_invocation_summary(all_results),
+            **usage_summary(all_results),
+            **loop_summary(all_results),
+            **tool_call_summary(all_results),
+            **trajectory_step_summary(all_results),
+            **phase_timing_summary(all_results),
+            **summary_source_fields(cfg.source_provenance, all_results),
+            **(
+                {
+                    "dataset_name": cfg.dataset_name,
+                    "dataset_version": cfg.dataset_version,
+                }
+                if cfg.dataset_name
+                else {}
+            ),
+        }
+        # Surface continual-learning provenance — generation, curve — so a
+        # resumed run can be audited end-to-end (#394).
+        if cfg.job_mode == "sequential-shared" and self.learner_store is not None:
+            summary["learner_store"] = {
+                "generation": self.learner_store.generation,
+                "learning_curve": self.learner_store.learning_curve(),
+                "snapshot_path": str(
+                    self._learner_store_path().relative_to(self._jobs_dir)
+                ),
+            }
+        # Write summary into the job directory so each run is self-contained.
+        job_dir = self._jobs_dir / self._job_name
+        job_dir.mkdir(parents=True, exist_ok=True)
+        summary_text = json.dumps(summary, indent=2)
+        (job_dir / "summary.json").write_text(summary_text)
+        # Backward-compat: also write to jobs_dir root for tooling that
+        # expects summary.json at the top level.
+        (self._jobs_dir / "summary.json").write_text(summary_text)
+
+        # Aggregate per-rollout trainer artifacts into job_dir/verifiers.jsonl
+        # — the architecture's train-mode seam (issue #385).
+        try:
+            from benchflow.trajectories.export import write_job_verifiers_jsonl
+
+            write_job_verifiers_jsonl(job_dir)
+        except Exception as e:  # pragma: no cover - defensive
+            logger.warning("Job-level trainer artifact aggregation failed: %s", e)
+        try:
+            from benchflow.trajectories.export_adp import write_job_adp_jsonl
+
+            write_job_adp_jsonl(job_dir)
+        except Exception as e:  # pragma: no cover - defensive
+            logger.warning("Job-level ADP aggregation failed: %s", e)
+        try:
+            from benchflow.trajectories.results import write_job_results_jsonl
+
+            write_job_results_jsonl(job_dir)
+        except Exception as e:  # pragma: no cover - defensive
+            logger.warning("Job-level results.jsonl aggregation failed: %s", e)
+
+        # Per-diagnostic summary warnings — driven by the registry so a
+        # new diagnostic class adds its warning automatically (issue #503).
+        for diag_cls in DIAGNOSTIC_REGISTRY:
+            if diag_cls.category is None:
+                continue
+            counts = (
+                error_category_counts
+                if diag_cls.channel == "error"
+                else verifier_error_category_counts
+            )
+            count = counts.get(diag_cls.category, 0)
+            if count > 0:
+                logger.warning(summary_warning(diag_cls, count, job_result.total))
+
+        # ENG-151: dep-install failures don't have a structured diagnostic
+        # yet — keep the standalone warning until they do.
+        dep_install_count = verifier_error_category_counts.get(VERIFIER_DEP_INSTALL, 0)
+        if dep_install_count > 0:
+            pct = dep_install_count / job_result.total * 100
+            logger.warning(
+                f"{dep_install_count} tasks ({pct:.0f}%) failed during verifier "
+                f"dependency install — check verifier_error_category in result.json "
+                f"and fix the task's index policy"
+            )
+        if audit_counts["verifier_errored"] > 0:
+            pct = audit_counts["verifier_errored"] / job_result.total * 100
+            logger.warning(
+                f"{audit_counts['verifier_errored']} tasks ({pct:.0f}%) had verifier errors — "
+                f"check verifier scripts for bugs"
+            )
+            if pct > 20:
+                logger.error(
+                    "Over 20% of tasks had verifier errors — results may be unreliable. "
+                    "This likely indicates a systemic verifier bug, not agent failure."
+                )
+
+        mean_part = (
+            f"mean_reward={job_result.mean_reward:.2f}, "
+            if job_result.mean_reward is not None
+            else ""
+        )
+        logger.info(
+            f"Job complete: {job_result.passed}/{job_result.total} "
+            f"({job_result.score:.1%}), {mean_part}errors={job_result.errored}, "
+            f"idle_timeouts={error_category_counts.get(IDLE_TIMEOUT, 0)}, "
+            f"time={elapsed / 60:.1f}min"
+        )
+
+        return job_result

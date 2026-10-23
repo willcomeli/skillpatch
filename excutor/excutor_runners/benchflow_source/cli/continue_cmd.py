@@ -1,0 +1,275 @@
+"""``bench eval continue`` — resume a timed-out run to completion.
+
+Standalone command (does not touch the normal eval/run path): reconstruct a
+previous unfinished ``openhands`` run's exact env + memory from its recorded
+trajectory via record-replay, continue it live, and write a new HF-compatible
+folder linked to the parent. See :mod:`benchflow.continue_run`.
+
+Canonical home is the ``eval`` group (``bench eval continue``); the original
+top-level ``bench continue`` stays as a hidden, deprecated alias so existing
+scripts keep working.
+"""
+
+from __future__ import annotations
+
+import asyncio
+from pathlib import Path
+from typing import Annotated
+
+import typer
+
+from benchflow.cli._shared import _apply_dotenv_to_process_env
+
+
+def register_continue(
+    eval_app: typer.Typer, *, alias_app: typer.Typer | None = None
+) -> None:
+    """Attach ``continue`` / ``continue-batch`` to the ``eval`` group.
+
+    ``eval_app`` is the canonical home (``bench eval continue``). When
+    ``alias_app`` is given, the same commands are also registered on it as
+    hidden, deprecated top-level aliases (``bench continue``) for backward
+    compatibility.
+    """
+
+    def continue_cmd(
+        folder: Annotated[
+            Path,
+            typer.Argument(
+                help="Original run output folder (contains config.json + "
+                "trajectory/llm_trajectory.jsonl)."
+            ),
+        ],
+        tasks_dir: Annotated[
+            Path | None,
+            typer.Option(
+                "--tasks-dir",
+                help="Directory holding the task source (instruction + verifier). "
+                "Required unless the recorded task_path still exists on disk.",
+            ),
+        ] = None,
+        model: Annotated[
+            str | None,
+            typer.Option(
+                "--model",
+                help="Override the live-continuation model (default: the "
+                "original run's model). Tests use gemini-3.1-flash-lite-preview.",
+            ),
+        ] = None,
+        timeout: Annotated[
+            int | None,
+            typer.Option(
+                "--timeout",
+                help="Wall-clock budget for the continuation, in seconds "
+                "(default: the original run's timeout).",
+            ),
+        ] = None,
+        output: Annotated[
+            Path | None,
+            typer.Option(
+                "--output",
+                help="Output jobs dir for the new run (default: "
+                "<orig-parent>/continued).",
+            ),
+        ] = None,
+        require_timeout: Annotated[
+            bool,
+            typer.Option(
+                "--require-timeout/--no-require-timeout",
+                help="Refuse runs whose recorded status is not a timeout.",
+            ),
+        ] = False,
+        strict_divergence: Annotated[
+            bool,
+            typer.Option(
+                "--strict-divergence/--no-strict-divergence",
+                help="Abort if replay leaves the original rails (message-count "
+                "mismatch) instead of warning.",
+            ),
+        ] = False,
+        replay_only: Annotated[
+            bool,
+            typer.Option(
+                "--replay-only/--no-replay-only",
+                help="Rebuild the env via replay and stop at the cut-point "
+                "(no live model needed) — useful for testing.",
+            ),
+        ] = False,
+        proxy_mode: Annotated[
+            str,
+            typer.Option(
+                "--proxy-mode",
+                help=(
+                    "Replay proxy placement: auto, host, or sandbox. Auto uses "
+                    "sandbox-local replay for Daytona/Modal and host replay for Docker."
+                ),
+            ),
+        ] = "auto",
+    ) -> None:
+        """Resume a previous unfinished (timed-out) openhands run to completion."""
+        from benchflow.continue_run.orchestrator import continue_run
+        from benchflow.continue_run.run_folder import RunFolderError
+
+        _apply_dotenv_to_process_env()
+
+        try:
+            result = asyncio.run(
+                continue_run(
+                    folder,
+                    tasks_dir=tasks_dir,
+                    model=model,
+                    timeout=timeout,
+                    output_dir=output,
+                    require_timeout=require_timeout,
+                    strict_divergence=strict_divergence,
+                    replay_only=replay_only,
+                    proxy_mode=proxy_mode,
+                )
+            )
+        except RunFolderError as exc:
+            # Command-agnostic prefix: the same callback backs both the canonical
+            # `bench eval continue` and the deprecated top-level `bench continue`.
+            typer.secho(f"benchflow: {exc}", fg=typer.colors.RED, err=True)
+            raise typer.Exit(1) from exc
+
+        typer.secho(
+            f"\n✓ continued run written to {result.rollout_dir}", fg=typer.colors.GREEN
+        )
+        typer.echo(
+            f"  replayed {result.n_recorded} recorded turn(s); "
+            f"{result.n_live} live turn(s); {result.divergences} divergence(s)"
+        )
+        if result.rewards is not None:
+            typer.echo(f"  rewards: {result.rewards}")
+        if result.error:
+            typer.secho(f"  agent error: {result.error}", fg=typer.colors.YELLOW)
+            # A failed continuation must report failure to $? — matches
+            # `eval continue-batch` (exits 1 if any continuation failed) and the
+            # `eval run` run-error contract. Without this a scripted caller
+            # reads the green ✓ + exit 0 as success.
+            raise typer.Exit(1)
+
+    def continue_batch_cmd(
+        root: Annotated[
+            Path,
+            typer.Argument(
+                help=(
+                    "Run folder or directory tree containing timeout run folders "
+                    "(config.json + trajectory/llm_trajectory.jsonl)."
+                )
+            ),
+        ],
+        tasks_dir: Annotated[
+            Path | None,
+            typer.Option(
+                "--tasks-dir",
+                help="Directory holding task sources; required unless recorded task_path exists.",
+            ),
+        ] = None,
+        model: Annotated[
+            str | None,
+            typer.Option("--model", help="Override live-continuation model."),
+        ] = None,
+        timeout: Annotated[
+            int | None,
+            typer.Option("--timeout", help="Wall-clock budget per continuation."),
+        ] = None,
+        output: Annotated[
+            Path | None,
+            typer.Option("--output", help="Output jobs dir for continued runs."),
+        ] = None,
+        concurrency: Annotated[
+            int,
+            typer.Option(
+                "--concurrency",
+                help="Maximum number of continuation runs in flight.",
+                min=1,
+            ),
+        ] = 100,
+        limit: Annotated[
+            int | None,
+            typer.Option("--limit", help="Limit discovered timeout folders."),
+        ] = None,
+        strict_divergence: Annotated[
+            bool,
+            typer.Option(
+                "--strict-divergence/--no-strict-divergence",
+                help="Abort a run if replay leaves the original rails.",
+            ),
+        ] = False,
+        proxy_mode: Annotated[
+            str,
+            typer.Option(
+                "--proxy-mode",
+                help=(
+                    "Replay proxy placement: auto, host, or sandbox. For PR5 "
+                    "Daytona runs, use the default auto or sandbox."
+                ),
+            ),
+        ] = "auto",
+    ) -> None:
+        """Continue all timed-out OpenHands runs under a directory tree."""
+        import json
+
+        from benchflow.continue_run.batch import (
+            continue_batch,
+            discover_timeout_run_folders,
+            summarize_batch,
+        )
+
+        _apply_dotenv_to_process_env()
+        # Fail fast on a bad ROOT instead of treating a typo'd/nonexistent path as
+        # an empty-but-valid tree — otherwise scripted callers read the exit-0
+        # "No timeout run folders found." as success. Matches `bench eval continue`,
+        # which exits 1 on a non-directory folder.
+        if not root.exists():
+            typer.secho(
+                f"benchflow: path does not exist: {root}",
+                fg=typer.colors.RED,
+                err=True,
+            )
+            raise typer.Exit(1)
+        if not root.is_dir():
+            typer.secho(
+                f"benchflow: not a directory: {root}",
+                fg=typer.colors.RED,
+                err=True,
+            )
+            raise typer.Exit(1)
+        folders = discover_timeout_run_folders(root, limit=limit)
+        if not folders:
+            typer.secho("No timeout run folders found.", fg=typer.colors.YELLOW)
+            return
+
+        typer.echo(
+            f"Continuing {len(folders)} timeout run(s) with concurrency={concurrency}"
+        )
+        results = asyncio.run(
+            continue_batch(
+                folders,
+                concurrency=concurrency,
+                tasks_dir=tasks_dir,
+                model=model,
+                timeout=timeout,
+                output_dir=output,
+                require_timeout=True,
+                strict_divergence=strict_divergence,
+                proxy_mode=proxy_mode,
+            )
+        )
+        summary = summarize_batch(results)
+        typer.echo(json.dumps(summary, indent=2))
+        if summary["failed"]:
+            raise typer.Exit(1)
+
+    # Canonical home: ``bench eval continue`` (visible) and
+    # ``bench eval continue-batch`` (hidden batch utility).
+    eval_app.command("continue")(continue_cmd)
+    eval_app.command("continue-batch", hidden=True)(continue_batch_cmd)
+
+    # Backward-compat: hidden, deprecated top-level ``bench continue`` aliases.
+    if alias_app is not None:
+        alias_app.command("continue", hidden=True, deprecated=True)(continue_cmd)
+        alias_app.command("continue-batch", hidden=True, deprecated=True)(
+            continue_batch_cmd
+        )

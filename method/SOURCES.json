@@ -1,0 +1,26 @@
+{
+  "trace2skill": {
+    "upstream": "https://github.com/Qwen-Applications/Trace2Skill.git",
+    "commit": "3d0b52a140f002a512930252b613c49048f7d5ac",
+    "import_mode": "tracked_files_snapshot",
+    "excluded_top_level": [
+      "data"
+    ],
+    "files_copied": 190,
+    "integration_status": "input_and_execution_adapter_available"
+  },
+  "skillopt": {
+    "upstream": "https://github.com/microsoft/SkillOpt.git",
+    "commit": "1a44050fc53aa4938a7a3927b6cca550491bfe51",
+    "import_mode": "git_clone",
+    "integration_status": "input_and_execution_adapter_available"
+  },
+  "eviskill": {
+    "upstream": "https://github.com/Zhouyaner/EviSkill.git",
+    "commit": "896dbcb75b94d09dc5330e1cc6dcadb864244e77",
+    "import_mode": "tracked_files_snapshot",
+    "excluded_top_level": [],
+    "files_copied": 51,
+    "integration_status": "source_snapshot_only; native_execution_runners_migrated_separately"
+  }
+}

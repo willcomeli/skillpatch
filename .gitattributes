@@ -1,0 +1,5 @@
+# Preserve third-party snapshots and the literal context in saved patches.
+method/trace2skill/** -whitespace
+method/eviskill/** -whitespace
+excutor/excutor_runners/benchflow_source/** -whitespace
+harness/patches/*.patch -whitespace

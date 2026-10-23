@@ -1,0 +1,26 @@
+[task]
+benchmark = "appworld"
+path = "tasks.json"
+skill_path = "skill/SKILL.md"
+
+[agent]
+name = "native"
+model = "your-model"
+api_key_env = "OPENAI_API_KEY"
+base_url_env = "OPENAI_BASE_URL"
+max_tokens = 4096
+temperature = 0.0
+
+[runtime]
+backend = "eviskill"
+# Timeout of each model HTTP request, not of the whole task.
+timeout_sec = 300
+
+[runtime.runner_options]
+data_dir = "/path/to/appworld/data"
+auto_server = true
+server_python = "/path/to/appworld/venv/bin/python"
+max_steps = 50
+
+[output]
+root = "../../runs"

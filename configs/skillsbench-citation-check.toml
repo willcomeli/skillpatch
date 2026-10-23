@@ -1,0 +1,23 @@
+[task]
+benchmark = "skillsbench"
+path = "/home/lihanlun123/workspace/dataset/skillsbench/tasks/citation-check"
+skill_mode = "with-skill"
+skill_condition = "reference-explicit"
+explicit_skill_read = true
+
+[agent]
+name = "openhands"
+model = "deepseek/deepseek-flash"
+
+[runtime]
+backend = "benchflow"
+bench_command = ["/home/lihanlun123/workspace/dataset/skillsbench/.venv/bin/bench"]
+expected_backend_version = "0.6.3"
+sandbox = "docker"
+sandbox_user = "agent"
+sandbox_setup_timeout = 600
+agent_idle_timeout = 300
+usage_tracking = "auto"
+
+[output]
+root = "../runs"

@@ -1,0 +1,16 @@
+{
+  "openhands": {
+    "repository": "https://github.com/OpenHands/OpenHands-CLI.git",
+    "commit": "0403f1a79a9fc62a6c7be21c17d7b51f64245ad2",
+    "shallow": true,
+    "downloaded_on": "2026-10-22",
+    "dependencies_installed": false
+  },
+  "codex": {
+    "repository": "https://github.com/openai/codex.git",
+    "commit": "9a8a85bc539325f2819dd0717f88b6ba6286495e",
+    "shallow": true,
+    "downloaded_on": "2026-10-22",
+    "dependencies_installed": false
+  }
+}

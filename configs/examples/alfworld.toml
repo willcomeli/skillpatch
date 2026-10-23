@@ -1,0 +1,23 @@
+[task]
+benchmark = "alfworld"
+path = "tasks.json"
+skill_path = "skill/SKILL.md"
+
+[agent]
+name = "native"
+model = "your-model"
+api_key_env = "OPENAI_API_KEY"
+base_url_env = "OPENAI_BASE_URL"
+
+[runtime]
+backend = "eviskill"
+timeout_sec = 300
+
+[runtime.runner_options]
+alfworld_path = "/path/to/alfworld"
+alfworld_config = "/path/to/alfworld/config.yaml"
+alfworld_split = "train"
+max_steps = 50
+
+[output]
+root = "../../runs"
