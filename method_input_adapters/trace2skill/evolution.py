@@ -9,6 +9,7 @@ from ..archive import load_archive, write_json
 from ..execution import SharedExecutorBridge, load_tasks
 from .results import export_results
 from .upstream import ROOT, activate, domain_prompt
+from ..chat_compat import ChatClient, is_gpt55
 
 
 def _hashes(root):
@@ -73,6 +74,8 @@ def evolve(sources, initial_skill_dir, output, environment, *, validation_manife
     shutil.copytree(source, skill_dir)
     errors, successes = [], []
     client = OpenAI(base_url=url, api_key=key, timeout=1800, max_retries=0)
+    if is_gpt55(model):
+        client = ChatClient(client)
     try:
         for row in rows:
             success = row['success']
@@ -96,6 +99,8 @@ def evolve(sources, initial_skill_dir, output, environment, *, validation_manife
         source_client = OpenAIClient(model=model, api_key=key, base_url=url, use_cache=False,
                                      generation_config={'temperature': 0, 'max_tokens': max_output_tokens},
                                      retry_times=(), timeout=1800)
+        if is_gpt55(model):
+            source_client._client = ChatClient(source_client._client)
 
         class DatasetEvolver(CombinedParallelSkillEvolver):
             def _build_map_system_prompt(self):

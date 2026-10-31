@@ -3,10 +3,12 @@
 from pathlib import Path
 from ..execution import SharedExecutorBridge, load_tasks
 from .adapter import SharedExecutionAdapter
+from ..chat_compat import skillopt_chat_parameters
 
 
 def train(manifest, initial_skill, output, environment, *, config=None, model='deepseek-flash',
-          api_key_env='DEEPSEEK_API_KEY', base_url_env='DEEPSEEK_BASE_URL'):
+          api_key_env='DEEPSEEK_API_KEY', base_url_env='DEEPSEEK_BASE_URL',
+          frozen_trajectory_manifest=None):
     from skillopt.config import load_config, flatten_config
     from skillopt.engine.trainer import ReflACTTrainer
     from skillopt.model import configure_openai_compatible
@@ -16,6 +18,10 @@ def train(manifest, initial_skill, output, environment, *, config=None, model='d
     output = Path(output).resolve()
     if output.exists():
         raise ValueError('Training output must be new; implicit resume is disabled')
+    adapter = SharedExecutionAdapter(tasks, SharedExecutorBridge(environment),
+                                     frozen_trajectory_manifest=frozen_trajectory_manifest,
+                                     initial_skill=initial_skill)
+    adapter.check_output(output)
     cfg = flatten_config(load_config(str(root / 'method/skillopt/configs/_base_/default.yaml')))
     if config is not None:
         cfg.update(flatten_config(load_config(str(Path(config).resolve()))))
@@ -42,5 +48,5 @@ def train(manifest, initial_skill, output, environment, *, config=None, model='d
     configure_openai_compatible(base_url=url, api_key=key, model=model,
                                timeout_seconds=cfg['optimizer_openai_compatible_timeout_seconds'],
                                max_tokens=8192, temperature=0)
-    adapter = SharedExecutionAdapter(tasks, SharedExecutorBridge(environment))
-    return ReflACTTrainer(cfg, adapter).train()
+    with skillopt_chat_parameters(model):
+        return ReflACTTrainer(cfg, adapter).train()

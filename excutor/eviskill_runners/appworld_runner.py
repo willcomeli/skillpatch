@@ -1,4 +1,5 @@
 from excutor.patch_delivery.skill_bank import optional_skill_patches
+from .model_errors import ModelActionBudgetExceeded
 
 import atexit
 import json
@@ -615,6 +616,7 @@ class AppWorldRunner:
         trajectory: List[Dict[str, Any]] = []
         current_output = initial_observation
         task_completed = False
+        model_limit = None
         try:
             for step in range(self.max_steps):
                 recent_history = trajectory[-self.action_history_length :] if self.action_history_length else []
@@ -626,14 +628,18 @@ class AppWorldRunner:
                     "app_descriptions": self.app_descriptions,
                     "max_steps": self.max_steps,
                 }
-                decision = self.action_agent.act(
-                    instruction,
-                    context,
-                    world_knowledge or {},
-                    memory_text,
-                    recent_history,
-                    step,
-                )
+                try:
+                    decision = self.action_agent.act(
+                        instruction,
+                        context,
+                        world_knowledge or {},
+                        memory_text,
+                        recent_history,
+                        step,
+                    )
+                except ModelActionBudgetExceeded as error:
+                    model_limit = {'step': step, 'reason': 'output_token_limit', 'detail': str(error)}
+                    break
                 code = str(decision.get("action") or APPWORLD_FALLBACK_CODE).strip()
                 output = env.execute(code)
                 task_completed = env.task_completed()
@@ -680,6 +686,9 @@ class AppWorldRunner:
         }
         if requirement_labels:
             result["train_evaluation_requirements"] = requirement_labels
+        if model_limit is not None:
+            result['termination_reason'] = 'model_output_limit'
+            result['model_action_limit'] = model_limit
         return result
 
     @optional_skill_patches

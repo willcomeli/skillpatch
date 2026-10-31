@@ -29,9 +29,10 @@ class NativeRunConfig:
     timeout_sec: int
     runner_options: dict
     output_root: Path
+    max_retries: int = 0
 
 
-def load_native_config(path: Path) -> NativeRunConfig:
+def load_native_config(path: Path, environment=None) -> NativeRunConfig:
     path = path.expanduser().resolve()
     with path.open('rb') as stream:
         document = tomllib.load(stream)
@@ -42,7 +43,7 @@ def load_native_config(path: Path) -> NativeRunConfig:
     task, agent = document.get('task', {}), document.get('agent', {})
     runtime, output = document.get('runtime', {}), document.get('output', {})
     _keys(task, {'benchmark', 'path', 'skill_path', 'skill_mode'}, 'task')
-    _keys(agent, {'name', 'model', 'api_key_env', 'base_url_env', 'base_url', 'temperature', 'max_tokens'}, 'agent')
+    _keys(agent, {'name', 'model', 'model_env', 'api_key_env', 'base_url_env', 'base_url', 'temperature', 'max_tokens', 'max_retries'}, 'agent')
     _keys(runtime, {'backend', 'timeout_sec', 'runner_options'}, 'runtime')
     _keys(output, {'root'}, 'output')
     benchmark = task.get('benchmark')
@@ -79,14 +80,23 @@ def load_native_config(path: Path) -> NativeRunConfig:
     temperature = agent.get('temperature', 0.0)
     if type(temperature) not in (int, float) or not 0 <= temperature <= 2:
         raise ValueError('agent.temperature must be between 0 and 2')
+    model = agent.get('model')
+    if 'model_env' in agent:
+        if 'model' in agent:
+            raise ValueError('Use agent.model or agent.model_env, not both')
+        name = _string(agent['model_env'], 'agent.model_env')
+        model = (os.environ if environment is None else environment).get(name)
+        if not isinstance(model, str) or not model.strip():
+            raise ValueError(f'Missing execution model environment variable: {name}')
     return NativeRunConfig(
         benchmark, resolve(task.get('path')),
         resolve(task['skill_path']) if mode == 'with-skill' else None,
-        _string(agent.get('model'), 'agent.model'),
+        _string(model, 'agent.model'),
         _string(agent.get('api_key_env', 'OPENAI_API_KEY'), 'agent.api_key_env'),
         _string(agent.get('base_url_env', 'OPENAI_BASE_URL'), 'agent.base_url_env'),
         _string(agent['base_url'], 'agent.base_url') if agent.get('base_url') else None,
         float(temperature), _integer(agent.get('max_tokens', 4096), 'agent.max_tokens'),
         _integer(runtime.get('timeout_sec', 300), 'runtime.timeout_sec'), options,
         resolve(output.get('root', '../runs')),
+        _integer(agent.get('max_retries', 0), 'agent.max_retries', minimum=0),
     )

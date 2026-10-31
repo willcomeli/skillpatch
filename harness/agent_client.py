@@ -30,8 +30,8 @@ class AgentConfig:
             raise ValueError('Agent base_url must be an HTTP(S) URL')
         if type(self.timeout_sec) is not int or self.timeout_sec <= 0:
             raise ValueError('Agent timeout_sec must be a positive integer')
-        if self.harness != 'openhands':
-            raise ValueError('Only the OpenHands harness is currently connected')
+        if self.harness not in {'openhands', 'codex'}:
+            raise ValueError('Agent harness must be openhands or codex')
 
 
 @dataclass
@@ -101,20 +101,36 @@ class AgentClient:
                 raise ValueError('Known credential value appears in agent instructions')
             prompt_path = output / 'prompt.md'
             prompt_path.write_text(instructions, encoding='utf-8')
-            command = list(config.command) or [str(ROOT / 'harness/openhands/.venv/bin/openhands')]
-            command += ['--headless', '--json', '--override-with-envs', '--file', str(prompt_path)]
-            env.update(LLM_MODEL=config.model, LLM_BASE_URL=config.base_url, LLM_API_KEY=key,
-                       OPENHANDS_WORK_DIR=str(workspace), OPENHANDS_PERSISTENCE_DIR=str(output / 'settings'),
-                       OPENHANDS_CONVERSATIONS_DIR=str(output / 'conversations'), OPENHANDS_SUPPRESS_BANNER='1')
+            if config.harness == 'codex':
+                from harness.codex_agent import build_command
+                command = build_command(config, workspace, output)
+                # Explicit custom-provider env_key keeps logged-in Codex auth separate.
+                for name in ('CODEX_API_KEY', 'OPENAI_API_KEY', 'OPENAI_BASE_URL'):
+                    if name != config.api_key_env:
+                        env.pop(name, None)
+                protocol = 'responses'
+            else:
+                command = list(config.command) or [str(ROOT / 'harness/openhands/.venv/bin/openhands')]
+                command += ['--headless', '--json', '--override-with-envs', '--file', str(prompt_path)]
+                env.update(LLM_MODEL=config.model, LLM_BASE_URL=config.base_url, LLM_API_KEY=key,
+                           OPENHANDS_WORK_DIR=str(workspace), OPENHANDS_PERSISTENCE_DIR=str(output / 'settings'),
+                           OPENHANDS_CONVERSATIONS_DIR=str(output / 'conversations'), OPENHANDS_SUPPRESS_BANNER='1')
+                protocol = 'chat_completions'
             write_json(output / 'request.json', redact({'config': config, 'materials': materials,
-                        'report_path': report_path, 'command': command, 'started_at': now()}, secrets))
+                        'report_path': report_path, 'command': command, 'wire_api': protocol,
+                        'started_at': now()}, secrets))
             if progress:
-                progress('Starting local OpenHands agent session')
+                progress(f'Starting local {config.harness} agent session')
             with (output / 'stdout.jsonl').open('w') as stdout, (output / 'stderr.log').open('w') as stderr:
                 process = subprocess.Popen(command, cwd=workspace, env=env, stdout=stdout,
-                                           stderr=stderr, start_new_session=True)
+                                           stderr=stderr, start_new_session=True,
+                                           stdin=subprocess.PIPE if config.harness == 'codex' else None)
                 try:
-                    result.return_code = process.wait(timeout=config.timeout_sec)
+                    if config.harness == 'codex':
+                        process.communicate(instructions.encode('utf-8'), timeout=config.timeout_sec)
+                        result.return_code = process.returncode
+                    else:
+                        result.return_code = process.wait(timeout=config.timeout_sec)
                 except subprocess.TimeoutExpired:
                     result.status = 'timeout'
                     result.errors.append('Agent session exceeded timeout_sec')
@@ -126,7 +142,7 @@ class AgentClient:
                         self._stop(process)
                         result.return_code = process.returncode
             if result.status not in {'timeout', 'cancelled'}:
-                self._collect(result, output, report_path)
+                self._collect(result, output, report_path, harness=config.harness)
         except KeyboardInterrupt:
             result.status = 'cancelled'
         except (OSError, ValueError) as error:
@@ -159,7 +175,27 @@ class AgentClient:
                 continue
 
     @staticmethod
-    def _collect(result, output, report_path):
+    def _collect(result, output, report_path, *, harness='openhands'):
+        if harness == 'codex':
+            from harness.codex_agent import collect_events
+            terminal, result.final_text, errors = collect_events(output / 'stdout.jsonl')
+            result.errors.extend(errors)
+        else:
+            terminal = AgentClient._collect_openhands(result, output)
+        if result.return_code != 0:
+            result.errors.append(f'Agent exited with code {result.return_code}')
+        if not terminal:
+            result.errors.append('Agent produced no terminal answer')
+        if report_path.is_symlink() or not report_path.is_file():
+            result.errors.append('Agent did not write a regular report file')
+        else:
+            parse_json_object(report_path.read_text(encoding='utf-8'))
+            result.report_path = report_path
+        if not result.errors:
+            result.status = 'completed'
+
+    @staticmethod
+    def _collect_openhands(result, output):
         terminal = False
         for line in (output / 'stdout.jsonl').read_text(encoding='utf-8').splitlines():
             try:
@@ -182,14 +218,4 @@ class AgentClient:
                     if text.strip():
                         terminal = True
                         result.final_text = text
-        if result.return_code != 0:
-            result.errors.append(f'Agent exited with code {result.return_code}')
-        if not terminal:
-            result.errors.append('Agent produced no terminal answer')
-        if report_path.is_symlink() or not report_path.is_file():
-            result.errors.append('Agent did not write a regular report file')
-        else:
-            parse_json_object(report_path.read_text(encoding='utf-8'))
-            result.report_path = report_path
-        if not result.errors:
-            result.status = 'completed'
+        return terminal

@@ -1,8 +1,9 @@
 {
+  "source_directory": "/home/lihanlun123/workspace/EviSkill",
   "upstream": "https://github.com/Zhouyaner/EviSkill.git",
   "commit": "896dbcb75b94d09dc5330e1cc6dcadb864244e77",
   "import_mode": "tracked_files_snapshot",
   "excluded_top_level": [],
   "files_copied": 51,
-  "integration_status": "source_snapshot_only; native_execution_runners_migrated_separately"
+  "integration_status": "source_only; dependencies_not_installed; not_connected_to_pipeline"
 }

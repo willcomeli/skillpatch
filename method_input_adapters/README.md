@@ -50,6 +50,8 @@ uv pip install --python .venvs/methods/bin/python --no-deps -e ./method/skillopt
 
 默认是一轮小规模训练；`--config <SkillOpt YAML>` 可覆盖其训练、优化和评估参数。模型连接默认读取 `DEEPSEEK_API_KEY` / `DEEPSEEK_BASE_URL`，可用 `--api-key-env`、`--base-url-env`、`--model` 改变。目标模型、工具、执行预算等由清单中原有执行 TOML 决定。所有 rollout，包括候选验证、slow update、meta update 和测试，均回到共享执行器；输出目录必须全新，不自动复用旧结果。
 
+AppWorld 可额外传 `--frozen-trajectory-manifest <共享trajectory_manifest.json>`，使首次初始 Skill 训练 rollout 读取已核验的原始轨迹。初始 Skill、模型、地址、预算和任务必须与冻结来源一致；仅复用一次，dev、候选及后续训练保持真实执行。使用记录保存在该 rollout 的 `frozen_trajectory_reuse.json`。三种方法共用清单的单步测试入口见 [AppWorld 脚本说明](../scripts/appworld/README.md)。
+
 任务清单格式（路径相对清单文件）：
 
 ```json
@@ -91,3 +93,17 @@ SkillsBench 复制整个原 Skill pack，仅替换指定 `skill_target` 的正�
 SkillsBench 交付完整 Skill 目录并保留其他 Skill。三个原生 Runner 目前只有文本 Skill bank，因此会将 `.md` / `.txt` 参考文档连同相对名称附在正文后；这是全文注入，不提供按路径访问的文件系统。包含可执行脚本或二进制资源的目录会明确拒绝，不能声称与原生文件工具等价。
 
 上游快照没有 `skills/skill-creator/scripts/quick_validate.py`，其内部结构验证会跳过。此状态明确记录在 `result.json`；适配层另行检查输出非空、路径边界和受保护文件完整性。真实任务是否改善仍需正式执行验证。
+
+## 本次验证记录
+
+- `runs/method-adapters/skillopt-upstream-smoke/`：合成任务输入，真实模型完成上游 reflect → 解析 edits → 修改 Skill；只验证原方法可调用。
+- `runs/method-adapters/skillopt-archives/`：真实 SkillsBench 成功、失败记录转换为 SkillOpt 输入。
+- `runs/method-adapters/skillopt-real-archive/`：真实失败轨迹经过适配后，原始 reflect / aggregate / select / apply 生成候选 Skill；该目录不代表完成了评分验证或接受了候选。
+- `runs/method-adapters/skillopt-live/`：共享执行器上的真实单轮训练已结束，初始验证任务 reward=1，训练任务 reward=0；该轮反思未解析出有效修改，记录为 `skip_no_patches`，未触发候选验证。两个不同类型任务只作流程检查，不用于效果比较。
+- `runs/method-adapters/skillopt-replay/`：补充上游可选的 `json-repair` 依赖后，从刚才的真实训练存档重新适配并反思，生成并应用两条修改；保留原始模型响应。未重跑任务，也未声称候选已通过评分验证。
+- `runs/method-adapters/trace2skill-upstream-smoke/`：合成分析条目，真实模型完成上游修改流程。
+- `runs/method-adapters/trace2skill-live-v2/`：真实 SkillsBench 失败轨迹，经原分析和演化流程生成更新后的 Skill；未请求执行验证。
+- `runs/method-adapters/trace2skill-success-live/`：真实 SkillsBench 成功轨迹，经上游续写、解析和演化流程生成更新后的 Skill；未请求执行验证。
+- `runs/method-adapters/skillopt-appworld/` 与 `trace2skill-appworld/`：同一份真实 AppWorld 存档的两种方法输入格式。
+
+验证汇总见 `runs/method-adapters/verification.json`。当前真实执行只验证了 SkillsBench；ALFWorld / ScienceWorld 的输入与执行桥覆盖来自工程测试，AppWorld 额外验证了真实存档转换。

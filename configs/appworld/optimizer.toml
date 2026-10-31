@@ -1,0 +1,7 @@
+# One shared optimizer model for Trace2Skill, SkillOpt and SkillPatch.
+# Fill METHOD_MODEL, METHOD_API_KEY and METHOD_BASE_URL in .env.
+[optimizer]
+model_env = "METHOD_MODEL"
+api_key_env = "METHOD_API_KEY"
+base_url_env = "METHOD_BASE_URL"
+harness_env = "SKILLPATCH_HARNESS"

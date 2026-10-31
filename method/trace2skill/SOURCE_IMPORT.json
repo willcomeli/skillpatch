@@ -1,4 +1,5 @@
 {
+  "source_directory": "/home/lihanlun123/workspace/Trace2Skill",
   "upstream": "https://github.com/Qwen-Applications/Trace2Skill.git",
   "commit": "3d0b52a140f002a512930252b613c49048f7d5ac",
   "import_mode": "tracked_files_snapshot",
@@ -6,5 +7,5 @@
     "data"
   ],
   "files_copied": 190,
-  "integration_status": "input_and_execution_adapter_available"
+  "integration_status": "source_only; dependencies_not_installed; not_connected_to_pipeline"
 }

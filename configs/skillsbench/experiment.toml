@@ -1,0 +1,11 @@
+# One reference rollout per task, shared by all three methods.
+tasks_dir = "/home/lihanlun123/workspace/dataset/skillsbench/tasks"
+# The wrapper only provides network proxy variables to the original installer.
+bench_command = ["/home/lihanlun123/workspace/dataset/skillsbench/.venv/bin/python", "/home/lihanlun123/skillpatch-rebuild/scripts/skillsbench/bench.py", "--install-proxy", "http://172.17.0.1:17899", "--install-index", "https://pypi.tuna.tsinghua.edu.cn/simple", "--uv-installer-github", "--ubuntu-install-mirror", "--install-timeout", "1800"]
+expected_backend_version = "0.6.3"
+agent = "openhands"
+execution_model_env = "EXECUTION_MODEL"
+execution_api_key_env = "EXECUTION_API_KEY"
+execution_base_url_env = "EXECUTION_BASE_URL"
+optimizer_config = "optimizer.toml"
+skillopt_config = "skillopt.yaml"

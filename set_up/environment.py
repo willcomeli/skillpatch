@@ -34,6 +34,13 @@ def load_environment(env_file: Path | None = None) -> dict[str, str]:
             raise ValueError(f"Shell expansion is unsupported in environment file at line {number}")
         if not environment.get(name):
             environment[name] = literal
+    # Old frozen archives retain their original credential variable names.
+    # New experiment settings use role names; aliases only keep those archives readable.
+    for legacy, role in (('DEEPSEEK_API_KEY', 'EXECUTION_API_KEY'),
+                         ('DEEPSEEK_BASE_URL', 'EXECUTION_BASE_URL'),
+                         ('GPT_API_KEY', 'METHOD_API_KEY'), ('GPT_BASE_URL', 'METHOD_BASE_URL')):
+        if not environment.get(legacy) and environment.get(role):
+            environment[legacy] = environment[role]
     return environment
 
 

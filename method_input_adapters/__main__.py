@@ -23,6 +23,8 @@ def main(argv=None):
             sub.add_argument('--manifest', required=True, type=Path)
             sub.add_argument('--initial-skill', required=True, type=Path)
             sub.add_argument('--config', type=Path)
+            sub.add_argument('--frozen-trajectory-manifest', type=Path,
+                             help='Reuse verified AppWorld trajectories for the initial training rollout')
         else:
             sub.add_argument('sources', nargs='+', type=Path)
             sub.add_argument('--initial-skill-dir', required=True, type=Path)
@@ -42,7 +44,8 @@ def main(argv=None):
     options = dict(model=args.model, api_key_env=args.api_key_env, base_url_env=args.base_url_env)
     if args.command == 'skillopt-train':
         from .skillopt.training import train
-        train(args.manifest, args.initial_skill, args.output, environment, config=args.config, **options)
+        train(args.manifest, args.initial_skill, args.output, environment, config=args.config,
+              frozen_trajectory_manifest=args.frozen_trajectory_manifest, **options)
     else:
         from .trace2skill.evolution import evolve
         evolve(args.sources, args.initial_skill_dir, args.output, environment,

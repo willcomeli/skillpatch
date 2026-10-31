@@ -70,3 +70,9 @@ uv sync --locked --no-dev --python 3.12
 - EviSkill 方法目前保留源码，尚未实现方法输入适配层。生成候选与正式执行评分验证是两个独立步骤。
 
 工程测试覆盖输入转换、评分有效性、分集、候选执行与资源保留。真实运行验证过 SkillsBench；其他数据集的完整实验仍需各自环境。
+
+## 实验编排与代理
+
+- [SkillsBench 三方法实验、并发基线与超时复核](scripts/skillsbench/README.md)
+- [AppWorld 实验脚本](scripts/appworld/README.md)
+- [Docker 安装代理转发与 SSH 隧道](scripts/proxy/README.md)

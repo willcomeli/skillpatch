@@ -53,11 +53,21 @@ def main(argv: list[str] | None = None) -> int:
     validation.add_argument("--output", required=True, type=Path)
     validation.add_argument("--env-file", type=Path)
     validation.add_argument("--prepare-only", action="store_true")
+    appworld_validation = subcommands.add_parser("validate-appworld-patch", help="Replay a patch's source AppWorld task; no dev split")
+    appworld_validation.add_argument("--patch", required=True, type=Path)
+    appworld_validation.add_argument("--output", required=True, type=Path)
+    appworld_validation.add_argument("--env-file", type=Path)
+    appworld_validation.add_argument("--prepare-only", action="store_true")
     args = parser.parse_args(argv)
     environment = {}
     try:
         # 读取环境和运行配置，选择适配器与后端。
         environment = load_environment(args.env_file)
+        if args.command == "validate-appworld-patch":
+            from method.skillpatch.patch_validation.appworld_patch_validation.pipeline import run_validation
+            result = run_validation(args.patch, args.output, environment, prepare_only=args.prepare_only)
+            print(json.dumps(redact(result, secret_values(environment)), ensure_ascii=False, indent=2))
+            return 130 if result["status"] == "cancelled" else (0 if result["status"] in {"prepared", "completed"} else 2)
         if args.command == "validate-patch":
             from method.skillpatch.patch_validation.skillsbench_patch_validation.config import load_validation_config
             from method.skillpatch.patch_validation.skillsbench_patch_validation.pipeline import run_validation
@@ -101,7 +111,7 @@ def main(argv: list[str] | None = None) -> int:
             from excutor.eviskill_runners.launcher import run_native
             if args.patch_skills_dir is not None:
                 raise ValueError("Native datasets use --patch-skill-dir (one Skill), not --patch-skills-dir")
-            config = load_native_config(args.config)
+            config = load_native_config(args.config, environment)
             stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
             output = args.output or config.output_root / f"{stamp}-{benchmark}-{uuid4().hex[:8]}"
             print(f"Run directory: {output.resolve()}", flush=True)

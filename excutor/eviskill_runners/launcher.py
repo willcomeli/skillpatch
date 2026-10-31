@@ -3,48 +3,145 @@
 import json
 import inspect
 import shutil
+import time
 from pathlib import Path
 from urllib.request import Request, urlopen
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 
 from excutor.executor_adapter.storage import write_json, tree_hashes, now
 from excutor.patch_delivery.skill_bank import PatchedSkillBank
 from set_up.environment import redact, secret_values, redact_artifacts
 from . import AlfWorldRunner, ScienceWorldRunner, AppWorldRunner
 from .agents import AlfWorldActionAgent, ScienceWorldActionAgent, AppWorldActionAgent
+from .model_errors import ModelActionBudgetExceeded
 
 RUNNERS = {'alfworld': AlfWorldRunner, 'scienceworld': ScienceWorldRunner, 'appworld': AppWorldRunner}
 AGENTS = {'alfworld': AlfWorldActionAgent, 'scienceworld': ScienceWorldActionAgent, 'appworld': AppWorldActionAgent}
 
 
+class IncompleteModelResponse(ValueError):
+    """No usable action was returned; retry the unchanged request within its budget."""
+    def __init__(self, message, finish_reason=None):
+        super().__init__(message)
+        self.finish_reason = finish_reason
+
+
 class ChatClient:
-    """Small non-streaming Chat Completions-compatible client; no implicit retries."""
+    """Chat Completions client with explicitly configured transient-request retries."""
     def __init__(self, config, environment):
         self.config = config
         self.key = environment.get(config.api_key_env)
         self.url = config.base_url or environment.get(config.base_url_env)
+        self.request_attempts = 0
+        self.retry_count = 0
+        self.stream_required = str(environment.get('EXECUTION_STREAM', 'false')).lower() in {'true', '1', 'yes'}
+        self.diagnostics_path = None
+        self.secrets = secret_values(environment)
+        if type(config.max_retries) is not int or config.max_retries < 0:
+            raise ValueError('max_retries must be a nonnegative integer')
         if not self.key or not self.url:
             raise ValueError('Native execution requires configured API key and base URL')
+
+    @staticmethod
+    def _stream_response(response):
+        parts, finish, done, reasoning_chars, usage = [], None, False, 0, None
+        for raw in response:
+            line = raw.decode('utf-8').strip()
+            if not line.startswith('data:'):
+                continue
+            payload = line[5:].strip()
+            if payload == '[DONE]':
+                done = True
+                break
+            event = json.loads(payload)
+            if event.get('usage') is not None:
+                usage = event['usage']
+            if event.get('error'):
+                raise ConnectionError('Model stream returned an error before completion')
+            choices = event.get('choices', [])
+            if not choices:
+                continue
+            choice = choices[0]
+            reasoning = choice.get('delta', {}).get('reasoning_content')
+            if isinstance(reasoning, str):
+                reasoning_chars += len(reasoning)
+            text = choice.get('delta', {}).get('content')
+            if text is not None:
+                if not isinstance(text, str):
+                    raise ValueError('Model stream content is not text')
+                parts.append(text)
+            if choice.get('finish_reason') is not None:
+                finish = choice['finish_reason']
+        if not done or finish is None:
+            raise ConnectionError('Model stream disconnected before completion')
+        return {'choices': [{'message': {'content': ''.join(parts)}, 'finish_reason': finish}],
+                'usage': usage, 'reasoning_chars': reasoning_chars}
+
+    def _checked_action(self, result):
+        try:
+            choice = result['choices'][0]
+            content = choice['message']['content']
+        except (KeyError, IndexError, TypeError):
+            raise ValueError('Model response does not contain a text action') from None
+        finish = choice.get('finish_reason')
+        summary = {'request_attempt': self.request_attempts, 'model': self.config.model,
+                   'finish_reason': finish, 'content_chars': len(content) if isinstance(content, str) else None,
+                   'reasoning_chars': result.get('reasoning_chars'), 'usage': result.get('usage')}
+        if self.diagnostics_path is not None:
+            with self.diagnostics_path.open('a', encoding='utf-8') as log:
+                log.write(json.dumps(redact(summary, self.secrets), ensure_ascii=False) + '\n')
+        if finish == 'length' or (finish == 'stop' and (content is None or isinstance(content, str) and not content.strip())):
+            raise IncompleteModelResponse('Model returned an incomplete or empty action: '
+                f'finish_reason={finish!r}, content_chars={summary["content_chars"]}, '
+                f'reasoning_chars={summary["reasoning_chars"]}', finish_reason=finish)
+        if finish != 'stop' or not isinstance(content, str) or not content.strip():
+            raise ValueError(f'Model returned an invalid action: finish_reason={finish!r}')
+        return content
+
+    def _request(self, body):
+        while True:
+            payload = {**body, **({'stream': True} if self.stream_required else {})}
+            request = Request(self.url.rstrip('/') + '/chat/completions',
+                              data=json.dumps(payload).encode(),
+                              headers={'Authorization': 'Bearer ' + self.key, 'Content-Type': 'application/json',
+                                       'User-Agent': 'skillpatch-rebuild/1.0'})
+            self.request_attempts += 1
+            try:
+                with urlopen(request, timeout=self.config.timeout_sec) as response:
+                    return self._stream_response(response) if self.stream_required else json.load(response)
+            except HTTPError as error:
+                if error.code == 400 and not self.stream_required:
+                    message = error.read(8192).decode('utf-8', errors='replace')
+                    if '非流式请求已禁用' in message and 'stream=true' in message:
+                        error.close()
+                        self.stream_required = True
+                        print('Model gateway requires streaming; using stream=true for this client.', flush=True)
+                        continue
+                raise
 
     def chat(self, messages):
         body = {'model': self.config.model, 'messages': messages,
                 'temperature': self.config.temperature, 'max_tokens': self.config.max_tokens}
-        request = Request(self.url.rstrip('/') + '/chat/completions',
-                          data=json.dumps(body).encode(),
-                          headers={'Authorization': 'Bearer ' + self.key, 'Content-Type': 'application/json'})
-        try:
-            with urlopen(request, timeout=self.config.timeout_sec) as response:
-                result = json.load(response)
-        except HTTPError as error:
-            raise ValueError(f'Model HTTP request failed: {error.code}') from None
-        try:
-            choice = result['choices'][0]
-            content = choice['message']['content']
-            if choice.get('finish_reason') != 'stop' or not isinstance(content, str) or not content.strip():
-                raise ValueError('Model returned an incomplete or empty action')
-            return content
-        except (KeyError, IndexError, TypeError):
-            raise ValueError('Model response does not contain a text action') from None
+        for attempt in range(self.config.max_retries + 1):
+            try:
+                result = self._request(body)
+                return self._checked_action(result)
+            except HTTPError as error:
+                status = error.code
+                error.close()
+                if status not in {408, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524, 525, 526, 527, 530} or attempt == self.config.max_retries:
+                    raise ValueError(f'Model HTTP request failed: {status}') from None
+            except (URLError, TimeoutError, ConnectionError):
+                if attempt == self.config.max_retries:
+                    raise
+            except IncompleteModelResponse as error:
+                if attempt == self.config.max_retries:
+                    if error.finish_reason == 'length':
+                        raise ModelActionBudgetExceeded(str(error)) from None
+                    raise
+            self.retry_count += 1
+            print(f'Model request transient failure; retry {attempt + 1}/{self.config.max_retries}', flush=True)
+            time.sleep(min(2 ** attempt, 4))
 
 
 class FileSkillBank:
@@ -77,6 +174,7 @@ def runner_arguments(config, output):
 
 def create_runner(config, output, environment):
     client = ChatClient(config, environment)
+    client.diagnostics_path = output / 'model_responses.jsonl'
     return RUNNERS[config.benchmark](AGENTS[config.benchmark](client), **runner_arguments(config, output))
 
 
@@ -147,6 +245,10 @@ def run_native(config, output: Path, environment, *, prepare_only=False, patch_s
         state['errors'].append(redact(f'{type(error).__name__}: {error}', secrets))
     finally:
         if runner is not None:
+            model_client = getattr(getattr(runner, 'action_agent', None), 'llm', None)
+            if isinstance(model_client, ChatClient):
+                state['model_requests'] = {'attempts': model_client.request_attempts,
+                                           'retries': model_client.retry_count}
             try:
                 runner.close()
             except Exception as error:

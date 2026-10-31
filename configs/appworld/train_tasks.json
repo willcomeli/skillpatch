@@ -1,0 +1,632 @@
+[
+  {
+    "dataset": "appworld",
+    "task_id": "82e2fac_1",
+    "task_family": "82e2fac",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "82e2fac_2",
+    "task_family": "82e2fac",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "82e2fac_3",
+    "task_family": "82e2fac",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "692c77d_1",
+    "task_family": "692c77d",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "692c77d_2",
+    "task_family": "692c77d",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "692c77d_3",
+    "task_family": "692c77d",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "2a163ab_1",
+    "task_family": "2a163ab",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "2a163ab_2",
+    "task_family": "2a163ab",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "2a163ab_3",
+    "task_family": "2a163ab",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "6104387_1",
+    "task_family": "6104387",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "6104387_2",
+    "task_family": "6104387",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "6104387_3",
+    "task_family": "6104387",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "29caf6f_1",
+    "task_family": "29caf6f",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "29caf6f_2",
+    "task_family": "29caf6f",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "29caf6f_3",
+    "task_family": "29caf6f",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "afc0fce_1",
+    "task_family": "afc0fce",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "afc0fce_2",
+    "task_family": "afc0fce",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "afc0fce_3",
+    "task_family": "afc0fce",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "287e338_1",
+    "task_family": "287e338",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "287e338_2",
+    "task_family": "287e338",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "287e338_3",
+    "task_family": "287e338",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "27e1026_1",
+    "task_family": "27e1026",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "27e1026_2",
+    "task_family": "27e1026",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "27e1026_3",
+    "task_family": "27e1026",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "22cc237_1",
+    "task_family": "22cc237",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "22cc237_2",
+    "task_family": "22cc237",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "22cc237_3",
+    "task_family": "22cc237",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "d0b1f43_1",
+    "task_family": "d0b1f43",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "d0b1f43_2",
+    "task_family": "d0b1f43",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "d0b1f43_3",
+    "task_family": "d0b1f43",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "b7a9ee9_1",
+    "task_family": "b7a9ee9",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "b7a9ee9_2",
+    "task_family": "b7a9ee9",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "b7a9ee9_3",
+    "task_family": "b7a9ee9",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "76f2c72_1",
+    "task_family": "76f2c72",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "76f2c72_2",
+    "task_family": "76f2c72",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "76f2c72_3",
+    "task_family": "76f2c72",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "34d9492_1",
+    "task_family": "34d9492",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "34d9492_2",
+    "task_family": "34d9492",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "34d9492_3",
+    "task_family": "34d9492",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "ce359b5_1",
+    "task_family": "ce359b5",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "ce359b5_2",
+    "task_family": "ce359b5",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "ce359b5_3",
+    "task_family": "ce359b5",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "b0a8eae_1",
+    "task_family": "b0a8eae",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "b0a8eae_2",
+    "task_family": "b0a8eae",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "b0a8eae_3",
+    "task_family": "b0a8eae",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "229360a_1",
+    "task_family": "229360a",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "229360a_2",
+    "task_family": "229360a",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "229360a_3",
+    "task_family": "229360a",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "7d7fbf6_1",
+    "task_family": "7d7fbf6",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "7d7fbf6_2",
+    "task_family": "7d7fbf6",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "7d7fbf6_3",
+    "task_family": "7d7fbf6",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "e3d6c94_1",
+    "task_family": "e3d6c94",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "e3d6c94_2",
+    "task_family": "e3d6c94",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "e3d6c94_3",
+    "task_family": "e3d6c94",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "ccb4494_1",
+    "task_family": "ccb4494",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "ccb4494_2",
+    "task_family": "ccb4494",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "ccb4494_3",
+    "task_family": "ccb4494",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "60d0b5b_1",
+    "task_family": "60d0b5b",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "60d0b5b_2",
+    "task_family": "60d0b5b",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "60d0b5b_3",
+    "task_family": "60d0b5b",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "771d8fc_1",
+    "task_family": "771d8fc",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "771d8fc_2",
+    "task_family": "771d8fc",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "771d8fc_3",
+    "task_family": "771d8fc",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "07b42fd_1",
+    "task_family": "07b42fd",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "07b42fd_2",
+    "task_family": "07b42fd",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "07b42fd_3",
+    "task_family": "07b42fd",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "3c13f5a_1",
+    "task_family": "3c13f5a",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "3c13f5a_2",
+    "task_family": "3c13f5a",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "3c13f5a_3",
+    "task_family": "3c13f5a",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "cf6abd2_1",
+    "task_family": "cf6abd2",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "cf6abd2_2",
+    "task_family": "cf6abd2",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "cf6abd2_3",
+    "task_family": "cf6abd2",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "302c169_1",
+    "task_family": "302c169",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "302c169_2",
+    "task_family": "302c169",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "302c169_3",
+    "task_family": "302c169",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "e7a10f8_1",
+    "task_family": "e7a10f8",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "e7a10f8_2",
+    "task_family": "e7a10f8",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "e7a10f8_3",
+    "task_family": "e7a10f8",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "c901732_1",
+    "task_family": "c901732",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "c901732_2",
+    "task_family": "c901732",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "c901732_3",
+    "task_family": "c901732",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "6ea6792_1",
+    "task_family": "6ea6792",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "6ea6792_2",
+    "task_family": "6ea6792",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "6ea6792_3",
+    "task_family": "6ea6792",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "e85d92a_1",
+    "task_family": "e85d92a",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "e85d92a_2",
+    "task_family": "e85d92a",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "e85d92a_3",
+    "task_family": "e85d92a",
+    "variant": 3,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "aa8502b_1",
+    "task_family": "aa8502b",
+    "variant": 1,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "aa8502b_2",
+    "task_family": "aa8502b",
+    "variant": 2,
+    "split": "train"
+  },
+  {
+    "dataset": "appworld",
+    "task_id": "aa8502b_3",
+    "task_family": "aa8502b",
+    "variant": 3,
+    "split": "train"
+  }
+]

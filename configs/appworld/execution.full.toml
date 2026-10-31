@@ -1,0 +1,31 @@
+# Full official train split. Existing archives retain their original frozen budgets.
+[task]
+benchmark = "appworld"
+path = "train_tasks.json"
+skill_path = "initial_skill.md"
+
+[agent]
+name = "native"
+model_env = "EXECUTION_MODEL"
+api_key_env = "EXECUTION_API_KEY"
+base_url_env = "EXECUTION_BASE_URL"
+temperature = 0.0
+max_tokens = 4096
+max_retries = 2
+
+[runtime]
+backend = "eviskill"
+timeout_sec = 300
+
+[runtime.runner_options]
+data_dir = "/home/lihanlun123/workspace/experiments/appworld-ds/data"
+auto_server = true
+server_python = "/home/lihanlun123/workspace/experiments/appworld-ds/.venv/bin/python"
+server_port_start = 24500
+max_steps = 100
+action_history_length = 8
+random_seed = 100
+parallel_workers = 1
+
+[output]
+root = "../../runs/appworld"

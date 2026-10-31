@@ -1,0 +1,18 @@
+# A single optimization step for each task/Skill pair.
+# Optimizer settings otherwise inherit SkillOpt's original defaults.
+train:
+  num_epochs: 1
+  train_size: 1
+  batch_size: 1
+  accumulation: 1
+gradient:
+  minibatch_size: 1
+  analyst_workers: 1
+  failure_only: false
+optimizer:
+  use_slow_update: false
+  use_meta_skill: false
+evaluation:
+  use_gate: true
+  sel_env_num: 1
+  eval_test: false
