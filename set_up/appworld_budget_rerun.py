@@ -11,7 +11,7 @@ import time
 from uuid import uuid4
 
 from excutor.executor_adapter.storage import now, sha256_file, tree_hashes, write_json
-from excutor.eviskill_runners.launcher import FileSkillBank, run_native
+from excutor.runner_common.launcher import FileSkillBank, run_native
 from excutor.patch_delivery.skill_bank import PatchedSkillBank
 from method_input_adapters.archive import load_archive
 from set_up.appworld_recover import read

@@ -77,7 +77,7 @@ def restart_decision(state, attempts, config_changed=False):
 def access_restored(recovery, name):
     """A small real request can detect restored credit even when .env did not change."""
     from dataclasses import replace
-    from excutor.eviskill_runners.launcher import ChatClient
+    from excutor.runner_common.launcher import ChatClient
     from set_up.environment import load_environment
     from set_up.native_config import load_native_config
     environment = load_environment(ROOT / '.env')

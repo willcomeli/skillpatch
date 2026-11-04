@@ -1,4 +1,6 @@
-from .common import (
+"""Legacy cross-benchmark prompt selection; action agents import local prompts."""
+
+from .prompt_common import (
     CONTRASTIVE_EVIDENCE_JUDGE_PROMPT,
     EPOCH_TRAJECTORY_COMPARISON_JUDGE_PROMPT,
     EPOCH_COVERAGE_REPAIR_PROMPT,
@@ -15,7 +17,7 @@ from .common import (
     SKILL_JUDGE_L2_MARKDOWN_PROMPT,
     SKILL_REFLECT_L2_MARKDOWN_PROMPT,
 )
-from .alfworld import (
+from ..alfworld_runners.prompts import (
     ALFWORLD_ACTION_AGENT_PROMPT,
     ALFWORLD_SKILL_JUDGE_L1_EVIDENCE_PROMPT,
     ALFWORLD_SKILL_JUDGE_L2_MARKDOWN_PROMPT,
@@ -24,7 +26,7 @@ from .alfworld import (
     ALFWORLD_SKILL_MANAGER_L1_FAILURE_EVIDENCE_PROMPT,
     ALFWORLD_SKILL_MANAGER_L1_SUCCESS_EVIDENCE_PROMPT,
 )
-from .scienceworld import (
+from ..scienceworld_runners.prompts import (
     SCIENCEWORLD_EPOCH_COVERAGE_REPAIR_PROMPT,
     SCIENCEWORLD_EPOCH_EDIT_MERGE_PROMPT,
     SCIENCEWORLD_EPOCH_EDIT_RANK_PROMPT,
@@ -39,7 +41,7 @@ from .scienceworld import (
     SCIENCEWORLD_SKILL_MANAGER_L1_SUCCESS_EVIDENCE_PROMPT,
     SCIENCEWORLD_SKILL_MANAGER_L2_MARKDOWN_PROMPT,
 )
-from .appworld import (
+from ..appworld_runners.prompts import (
     APPWORLD_ACTION_AGENT_PROMPT,
     APPWORLD_EPOCH_COVERAGE_REPAIR_PROMPT,
     APPWORLD_EPOCH_EDIT_MERGE_PROMPT,

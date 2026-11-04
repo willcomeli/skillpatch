@@ -3,6 +3,7 @@
 from typing import Callable
 
 from .base import ExecutionAdapter
+from .native import NativeBenchmarkAdapter
 
 
 _factories: dict[str, Callable[[], ExecutionAdapter]] = {}
@@ -25,3 +26,17 @@ def get_execution_adapter(name: str) -> ExecutionAdapter:
         from .skillsbench import SkillsBenchExecutionAdapter
         return SkillsBenchExecutionAdapter()
     raise ValueError(f"Unsupported benchmark adapter: {name}")
+
+
+def get_native_adapter(name: str) -> NativeBenchmarkAdapter:
+    """Load only the requested native benchmark's runner and action agent."""
+    if name == 'appworld':
+        from .appworld import AppWorldAdapter
+        return AppWorldAdapter()
+    if name == 'alfworld':
+        from .alfworld import AlfWorldAdapter
+        return AlfWorldAdapter()
+    if name == 'scienceworld':
+        from .scienceworld import ScienceWorldAdapter
+        return ScienceWorldAdapter()
+    raise ValueError(f'Unsupported native benchmark adapter: {name}')

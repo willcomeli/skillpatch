@@ -13,7 +13,8 @@ from set_up.native_config import load_native_config
 from method_input_adapters.skillpatch import build_diagnosis_context
 from excutor.executor_adapter.storage import sha256_file
 from excutor.excutor_runners.patch_sidecars import write_sidecars
-from excutor.eviskill_runners.launcher import create_runner, FileSkillBank
+from excutor.runner_common.launcher import create_runner, FileSkillBank
+from excutor.executor_adapter.registry import get_native_adapter
 
 
 class NativeCliTests(unittest.TestCase):
@@ -54,7 +55,7 @@ class NativeCliTests(unittest.TestCase):
                 with self.subTest(benchmark=benchmark, patched=patched):
                     output = self.root / f'{benchmark}-{patched}'
                     extra = ['--patch-skill-dir', str(self.skill)] if patched else []
-                    with patch('excutor.eviskill_runners.launcher.create_runner') as create:
+                    with patch('excutor.runner_common.launcher.create_runner') as create:
                         self.assertEqual(self.invoke(config, output, extra), 0)
                         create.assert_not_called()
                     state = json.loads((output / 'result.json').read_text())
@@ -68,10 +69,11 @@ class NativeCliTests(unittest.TestCase):
             config = load_native_config(self.config(benchmark))
             runner_class = Mock()
             # Preserve constructor signature validation using the real class.
-            from excutor.eviskill_runners.launcher import RUNNERS
+            adapter = get_native_adapter(benchmark)
             import inspect
-            runner_class.__signature__ = inspect.signature(RUNNERS[benchmark])
-            with patch.dict(RUNNERS, {benchmark: runner_class}):
+            runner_class.__signature__ = inspect.signature(adapter.runner_type)
+            with patch.object(adapter, 'runner_type', runner_class), \
+                 patch('excutor.runner_common.launcher.get_native_adapter', return_value=adapter):
                 create_runner(config, self.root, {'OPENAI_API_KEY': 'fixture-secret'})
             agent = runner_class.call_args.args[0]
             self.assertEqual(type(agent).__name__, {
@@ -88,7 +90,7 @@ class NativeCliTests(unittest.TestCase):
                     'success': True, 'score': 1.0, 'steps': 0, 'trajectory': [],
                     'retrieved_memory_text': text}
         runner.run_task.side_effect = run_task
-        with patch('excutor.eviskill_runners.launcher.create_runner', return_value=runner), redirect_stdout(io.StringIO()):
+        with patch('excutor.runner_common.launcher.create_runner', return_value=runner), redirect_stdout(io.StringIO()):
             code = main(['run', '--config', str(config), '--output', str(output)])
         self.assertEqual(code, 0)
         runner.close.assert_called_once()
@@ -116,7 +118,7 @@ class NativeCliTests(unittest.TestCase):
         runner = Mock()
         runner.run_task.side_effect = [{'dataset': 'appworld', 'task_id': 'fixture_1'}, RuntimeError('failed')]
         output = self.root / 'partial'
-        with patch('excutor.eviskill_runners.launcher.create_runner', return_value=runner), redirect_stdout(io.StringIO()):
+        with patch('excutor.runner_common.launcher.create_runner', return_value=runner), redirect_stdout(io.StringIO()):
             code = main(['run', '--config', str(config), '--output', str(output)])
         self.assertEqual(code, 2)
         runner.close.assert_called_once()

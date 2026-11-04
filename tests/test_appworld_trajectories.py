@@ -64,7 +64,7 @@ class SharedAppWorldTrajectoriesTests(unittest.TestCase):
 
     def run_collection(self, output='collection', runner=None, **kwargs):
         runner = runner or Runner()
-        with patch('excutor.eviskill_runners.launcher.create_runner', return_value=runner):
+        with patch('excutor.runner_common.launcher.create_runner', return_value=runner):
             result = collect(self.config, self.root / output, self.environment, **kwargs)
         return result, runner
 
@@ -85,7 +85,7 @@ class SharedAppWorldTrajectoriesTests(unittest.TestCase):
 
     def test_limit_keeps_input_order_and_prepare_never_emits_frozen_manifest(self):
         output = self.root / 'prepare'
-        with patch('excutor.eviskill_runners.launcher.create_runner') as create:
+        with patch('excutor.runner_common.launcher.create_runner') as create:
             state = collect(self.config, output, self.environment, limit=1, prepare_only=True)
         self.assertEqual(state['status'], 'prepared', state)
         create.assert_not_called()
@@ -166,7 +166,7 @@ class SharedAppWorldTrajectoriesTests(unittest.TestCase):
         for tasks in cases:
             with self.subTest(tasks=tasks):
                 write_json(self.tasks, tasks)
-                with patch('excutor.eviskill_runners.launcher.create_runner') as create:
+                with patch('excutor.runner_common.launcher.create_runner') as create:
                     with self.assertRaises(ValueError):
                         collect(self.config, self.root / 'bad', self.environment, limit=1)
                 create.assert_not_called()

@@ -33,10 +33,10 @@ class AppWorldSmokeTests(unittest.TestCase):
         self.reference = 'Resolve each time-zone offset before comparing calendar dates.'
         self.optimizer_calls = {}
         self.world = Runner()
-        runner_patch = patch('excutor.eviskill_runners.launcher.create_runner', return_value=self.world)
+        runner_patch = patch('excutor.runner_common.launcher.create_runner', return_value=self.world)
         self.runner_factory = runner_patch.start()
         self.addCleanup(runner_patch.stop)
-        network_patch = patch('excutor.eviskill_runners.launcher.urlopen',
+        network_patch = patch('excutor.runner_common.launcher.urlopen',
                               side_effect=AssertionError('Tests must not call a live model'))
         self.network = network_patch.start()
         self.addCleanup(network_patch.stop)

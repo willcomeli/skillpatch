@@ -10,8 +10,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from .action_runtime import SCIENCEWORLD_ACTION_HISTORY_LENGTH
-from .agents import ScienceWorldActionAgent
+from ..runner_common.action_runtime import SCIENCEWORLD_ACTION_HISTORY_LENGTH
+from .agent import ScienceWorldActionAgent
 from .task_family import normalize_scienceworld_task_family
 
 

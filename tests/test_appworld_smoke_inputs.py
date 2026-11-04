@@ -45,7 +45,7 @@ class AppWorldSmokeInputTests(unittest.TestCase):
             '[output]\nroot="runs"\n', encoding='utf-8')
         self.environment = {'DEEPSEEK_API_KEY': 'synthetic-smoke-input-test-key',
                             'DEEPSEEK_BASE_URL': 'https://fixture.example/v1'}
-        with patch('excutor.eviskill_runners.launcher.create_runner', return_value=Runner()):
+        with patch('excutor.runner_common.launcher.create_runner', return_value=Runner()):
             result = collect(self.config_path, self.root / 'shared', self.environment)
         self.assertEqual(result['status'], 'completed', result)
         self.manifest_path = Path(result['manifest_path'])
@@ -60,7 +60,7 @@ class AppWorldSmokeInputTests(unittest.TestCase):
         original = load_native_config(self.config_path)
         self.config_path.write_text('Original editable configuration has changed.', encoding='utf-8')
         self.folder.parent.mkdir()
-        with patch('excutor.eviskill_runners.launcher.create_runner') as runner:
+        with patch('excutor.runner_common.launcher.create_runner') as runner:
             inputs = prepare_inputs(self.manifest_path, self.folder)
         expected = replace(original, base_url=self.environment['DEEPSEEK_BASE_URL'],
                            tasks_path=self.folder / 'tasks.json', skill_path=inputs['initial_skill'],

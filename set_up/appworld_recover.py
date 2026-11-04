@@ -11,7 +11,7 @@ import time
 from unittest.mock import patch
 from uuid import uuid4
 
-from excutor.eviskill_runners.appworld_manifests import load_official_appworld_split
+from excutor.appworld_runners.manifests import load_official_appworld_split
 from excutor.executor_adapter.storage import now, sha256_file, tree_hashes, write_json
 from method_input_adapters.execution import SharedExecutorBridge
 from set_up.appworld_smoke import ROOT, check_execution, skill_text

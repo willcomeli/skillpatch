@@ -93,7 +93,7 @@ class AppWorldExperimentTests(unittest.TestCase):
         return json.loads(Path(path).read_text(encoding='utf-8'))
 
     def collect_source(self, name, *, success=False):
-        with patch('excutor.eviskill_runners.launcher.create_runner', return_value=Runner(success=success)):
+        with patch('excutor.runner_common.launcher.create_runner', return_value=Runner(success=success)):
             state = collect(self.execution_config, self.root / name, self.environment)
         self.assertEqual(state['status'], 'completed', state)
         return Path(state['manifest_path'])
@@ -110,7 +110,7 @@ class AppWorldExperimentTests(unittest.TestCase):
                               generation(), generation(), report()])
         runners = [Runner(success=True), Runner(success=False)]
         with patch('harness.agent_client.AgentClient.run', side_effect=client.run) as agent, \
-                patch('excutor.eviskill_runners.launcher.create_runner', side_effect=runners) as create:
+                patch('excutor.runner_common.launcher.create_runner', side_effect=runners) as create:
             state = self.execute()
         self.assertEqual(state['status'], 'completed', state)
         self.assertEqual((state['candidate_count'], state['replayed_count'], state['repaired_count']), (2, 2, 1))
@@ -135,7 +135,7 @@ class AppWorldExperimentTests(unittest.TestCase):
     def test_successful_tasks_skip_agents_and_leave_smoke_incomplete(self):
         manifest = self.collect_source('all-succeeded', success=True)
         with patch('harness.agent_client.AgentClient.run') as agent, \
-                patch('excutor.eviskill_runners.launcher.create_runner') as runner:
+                patch('excutor.runner_common.launcher.create_runner') as runner:
             state = self.execute(manifest_path=manifest, profile='smoke')
         self.assertEqual(state['status'], 'incomplete', state)
         self.assertEqual(state['replayed_count'], 0)
@@ -149,7 +149,7 @@ class AppWorldExperimentTests(unittest.TestCase):
                 payloads = [report()] if outcome == 'no_issue' else [report(self.first_quote), generation(outcome)]
                 client = QueuedAgent(payloads)
                 with patch('harness.agent_client.AgentClient.run', side_effect=client.run), \
-                        patch('excutor.eviskill_runners.launcher.create_runner') as runner:
+                        patch('excutor.runner_common.launcher.create_runner') as runner:
                     state = self.execute(output=outcome, profile='smoke', task_limit=1)
                 self.assertEqual(state['status'], 'incomplete', state)
                 self.assertEqual((state['candidate_count'], state['replayed_count']), (0, 0))
@@ -162,7 +162,7 @@ class AppWorldExperimentTests(unittest.TestCase):
 
     def test_prepare_requires_no_credentials_runner_or_agent(self):
         with patch('harness.agent_client.AgentClient.run') as agent, \
-                patch('excutor.eviskill_runners.launcher.create_runner') as runner:
+                patch('excutor.runner_common.launcher.create_runner') as runner:
             state = self.execute(profile='smoke', environment={}, prepare_only=True)
         self.assertEqual(state['status'], 'prepared', state)
         self.assertEqual([task['status'] for task in state['tasks']], ['prepared', 'prepared'])
@@ -192,7 +192,7 @@ class AppWorldExperimentTests(unittest.TestCase):
         for output in ('shared/nested', 'shared/execution/nested'):
             with self.subTest(output=output), \
                     patch('harness.agent_client.AgentClient.run') as agent, \
-                    patch('excutor.eviskill_runners.launcher.create_runner') as runner:
+                    patch('excutor.runner_common.launcher.create_runner') as runner:
                 with self.assertRaisesRegex(ValueError, 'outside the shared trajectory archives'):
                     self.execute(output=output, prepare_only=True)
                 self.assertFalse((self.root / output).exists())
@@ -202,7 +202,7 @@ class AppWorldExperimentTests(unittest.TestCase):
     def test_limits_select_first_tasks_and_first_reported_issues(self):
         client = QueuedAgent([report(self.first_quote, self.second_quote), generation()])
         with patch('harness.agent_client.AgentClient.run', side_effect=client.run) as agent, \
-                patch('excutor.eviskill_runners.launcher.create_runner', return_value=Runner()) as runner:
+                patch('excutor.runner_common.launcher.create_runner', return_value=Runner()) as runner:
             state = self.execute(task_limit=1, max_issues_per_task=1, profile='smoke')
         self.assertEqual(state['status'], 'completed', state)
         self.assertEqual([task['task_id'] for task in state['tasks']], ['fixture_1'])
@@ -224,7 +224,7 @@ class AppWorldExperimentTests(unittest.TestCase):
         manifest = self.read(self.manifest_path)
         Path(manifest['initial_skill']['path']).write_text('Changed frozen Skill.', encoding='utf-8')
         with patch('harness.agent_client.AgentClient.run') as agent, \
-                patch('excutor.eviskill_runners.launcher.create_runner') as runner:
+                patch('excutor.runner_common.launcher.create_runner') as runner:
             with self.assertRaisesRegex(ValueError, 'integrity check failed'):
                 self.execute()
         self.assertFalse((self.root / 'method').exists())
@@ -241,7 +241,7 @@ class AppWorldExperimentTests(unittest.TestCase):
 
         client = QueuedAgent([report(self.first_quote)], after_write=mutate_source)
         with patch('harness.agent_client.AgentClient.run', side_effect=client.run) as agent, \
-                patch('excutor.eviskill_runners.launcher.create_runner') as runner:
+                patch('excutor.runner_common.launcher.create_runner') as runner:
             state = self.execute()
         self.assertEqual(state['status'], 'failed', state)
         self.assertEqual(state['phase'], 'diagnosis')
@@ -254,7 +254,7 @@ class AppWorldExperimentTests(unittest.TestCase):
 
     def test_missing_credentials_fail_before_model_calls(self):
         with patch('harness.agent_client.AgentClient.run') as agent, \
-                patch('excutor.eviskill_runners.launcher.create_runner') as runner:
+                patch('excutor.runner_common.launcher.create_runner') as runner:
             with self.assertRaisesRegex(ValueError, 'Missing credential'):
                 self.execute(environment={})
         self.assertFalse((self.root / 'method').exists())

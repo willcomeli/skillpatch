@@ -1,7 +1,6 @@
 """Compose native Runners, model clients and Skill banks outside the CLI."""
 
 import json
-import inspect
 import shutil
 import time
 from pathlib import Path
@@ -11,12 +10,9 @@ from urllib.error import HTTPError, URLError
 from excutor.executor_adapter.storage import write_json, tree_hashes, now
 from excutor.patch_delivery.skill_bank import PatchedSkillBank
 from set_up.environment import redact, secret_values, redact_artifacts
-from . import AlfWorldRunner, ScienceWorldRunner, AppWorldRunner
-from .agents import AlfWorldActionAgent, ScienceWorldActionAgent, AppWorldActionAgent
+from ..executor_adapter.registry import get_native_adapter
 from .model_errors import ModelActionBudgetExceeded
 
-RUNNERS = {'alfworld': AlfWorldRunner, 'scienceworld': ScienceWorldRunner, 'appworld': AppWorldRunner}
-AGENTS = {'alfworld': AlfWorldActionAgent, 'scienceworld': ScienceWorldActionAgent, 'appworld': AppWorldActionAgent}
 
 
 class IncompleteModelResponse(ValueError):
@@ -159,23 +155,16 @@ class FileSkillBank:
 
 
 def runner_arguments(config, output):
-    options = dict(config.runner_options)
-    if config.benchmark == 'appworld':
-        if 'output_dir' in options:
-            raise ValueError('AppWorld output_dir is managed by the launcher')
-        options['output_dir'] = str(output)
-    cls = RUNNERS[config.benchmark]
-    try:
-        inspect.signature(cls).bind(object(), **options)
-    except TypeError as error:
-        raise ValueError(f'Invalid {config.benchmark} runner_options: {error}') from None
-    return options
+    return get_native_adapter(config.benchmark).runner_arguments(config, output)
 
 
 def create_runner(config, output, environment):
+    adapter = get_native_adapter(config.benchmark)
+    # Validate before constructing a model client or starting an environment.
+    adapter.runner_arguments(config, output)
     client = ChatClient(config, environment)
     client.diagnostics_path = output / 'model_responses.jsonl'
-    return RUNNERS[config.benchmark](AGENTS[config.benchmark](client), **runner_arguments(config, output))
+    return adapter.create_runner(config, output, client)
 
 
 def run_native(config, output: Path, environment, *, prepare_only=False, patch_skill_dir=None):

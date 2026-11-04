@@ -108,7 +108,7 @@ def main(argv: list[str] | None = None) -> int:
             return 130 if result["status"] == "cancelled" else (0 if result["status"] in {"completed", "prepared", "skipped"} else 2)
         benchmark = read_benchmark(args.config)
         if benchmark in NATIVE_BENCHMARKS:
-            from excutor.eviskill_runners.launcher import run_native
+            from excutor.runner_common.launcher import run_native
             if args.patch_skills_dir is not None:
                 raise ValueError("Native datasets use --patch-skill-dir (one Skill), not --patch-skills-dir")
             config = load_native_config(args.config, environment)

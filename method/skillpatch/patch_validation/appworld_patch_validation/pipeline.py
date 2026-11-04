@@ -6,7 +6,7 @@ import json
 import shutil
 
 from excutor.executor_adapter.storage import now, sha256_file, write_json, jsonable
-from excutor.eviskill_runners.launcher import FileSkillBank, run_native
+from excutor.runner_common.launcher import FileSkillBank, run_native
 from excutor.patch_delivery.skill_bank import PatchedSkillBank
 from excutor.excutor_runners.patch_sidecars import (
     SIDECAR_MANIFEST, SIDECAR_MARKDOWN, load_sidecars, write_sidecars,

@@ -9,8 +9,8 @@ import json
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from excutor.eviskill_runners.appworld_manifests import load_official_appworld_split
-from excutor.eviskill_runners.launcher import run_native
+from excutor.appworld_runners.manifests import load_official_appworld_split
+from excutor.runner_common.launcher import run_native
 from excutor.executor_adapter.storage import now, sha256_file, write_json
 from method_input_adapters.archive import load_archive
 from set_up.environment import redact, secret_values

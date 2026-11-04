@@ -100,7 +100,7 @@ class SharedExecutorBridge:
             if result.status != 'completed':
                 raise ValueError(f'Shared execution failed: {result.status}; see {output / "execution/result.json"}')
             return output / 'execution'
-        from excutor.eviskill_runners.launcher import run_native
+        from excutor.runner_common.launcher import run_native
         config = load_native_config(config_path, self.environment)
         if 'task_ref' not in entry:
             raise ValueError('Native execution requires one explicit task_ref')

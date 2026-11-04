@@ -24,7 +24,7 @@ class SharedExecutionAdapter(EnvAdapter):
     def _check_frozen_inputs(self):
         from set_up.appworld_trajectories import load_manifest
         from set_up.native_config import load_native_config
-        from excutor.eviskill_runners.appworld_manifests import load_official_appworld_split
+        from excutor.appworld_runners.manifests import load_official_appworld_split
 
         if sha256_file(self._frozen_manifest_path) != self._frozen_manifest_sha256:
             raise ValueError('Frozen trajectory manifest changed after binding')

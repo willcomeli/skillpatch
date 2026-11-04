@@ -2,8 +2,8 @@ from unittest import TestCase
 from unittest.mock import Mock, patch
 from urllib.error import URLError
 
-from excutor.eviskill_runners.appworld_runner import AppWorldRunner
-from excutor.eviskill_runners.model_errors import ModelActionBudgetExceeded
+from excutor.appworld_runners.runner import AppWorldRunner
+from excutor.runner_common.model_errors import ModelActionBudgetExceeded
 
 
 class ModelLimitTests(TestCase):

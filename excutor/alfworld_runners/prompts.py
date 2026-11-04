@@ -1,4 +1,4 @@
-from .common import (
+from ..runner_common.prompt_common import (
     SKILL_JUDGE_L1_EVIDENCE_PROMPT,
     SKILL_JUDGE_L2_MARKDOWN_PROMPT,
     SKILL_MANAGER_L1_EVIDENCE_PROMPT,

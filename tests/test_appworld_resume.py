@@ -23,7 +23,7 @@ class AppWorldResumeTests(unittest.TestCase):
         self.prefix_hash = sha256_file(self.prefix)
         self.original_collection = self.read(self.shared / 'result.json')
         self.original_execution = self.read(self.shared / 'execution/result.json')
-        network = patch('excutor.eviskill_runners.launcher.urlopen',
+        network = patch('excutor.runner_common.launcher.urlopen',
                         side_effect=AssertionError('Resume tests must not call a model'))
         self.network = network.start()
         self.addCleanup(network.stop)

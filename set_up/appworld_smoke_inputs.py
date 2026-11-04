@@ -6,7 +6,7 @@ import math
 from pathlib import Path
 import shutil
 
-from excutor.eviskill_runners.appworld_manifests import load_official_appworld_split
+from excutor.appworld_runners.manifests import load_official_appworld_split
 from excutor.executor_adapter.storage import sha256_file, write_json
 from set_up.appworld_trajectories import load_manifest
 from set_up.native_config import NativeRunConfig, load_native_config

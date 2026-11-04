@@ -1,6 +1,7 @@
+"""ALFWorld task aliases and family detection."""
+
 import re
 from typing import Any, Optional
-
 
 TASK_TYPE_ALIASES = {
     "pick_and_place": "pick_and_place",
@@ -28,24 +29,6 @@ def normalize_task_type(value: Any) -> Optional[str]:
         return None
     text = re.sub(r"[^a-z0-9]+", "_", text).strip("_")
     return TASK_TYPE_ALIASES.get(text)
-
-
-def normalize_scienceworld_task_family(value: Any) -> Optional[str]:
-    text = str(value or "").strip().lower()
-    if not text:
-        return None
-    text = re.sub(r"^task[_ -]*\d+[_ -]*", "", text)
-    text = re.sub(r"[^a-z0-9]+", "_", text).strip("_")
-    return text or None
-
-
-def normalize_task_type_for_dataset(value: Any, dataset: Any = None) -> Optional[str]:
-    key = str(dataset or "").lower()
-    if key in {"scienceworld", "science_world"}:
-        return normalize_scienceworld_task_family(value)
-    if key == "alfworld":
-        return normalize_alfworld_task_family(value)
-    return normalize_task_type(value) or normalize_scienceworld_task_family(value)
 
 
 def normalize_alfworld_task_family(value: Any) -> Optional[str]:

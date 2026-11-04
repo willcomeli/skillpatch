@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import patch
 
 from excutor.executor_adapter.storage import write_json, tree_hashes
-from excutor.eviskill_runners.launcher import run_native
+from excutor.runner_common.launcher import run_native
 from excutor.patch_delivery.skill_bank import PatchedSkillBank
 from harness.agent_client import AgentResult
 from method.skillpatch.patch_diagnosis.config import load_discovery_config
@@ -68,7 +68,7 @@ class AppWorldReplayTests(unittest.TestCase):
             'DEEPSEEK_API_KEY', 'DEEPSEEK_BASE_URL', None, 0.0, 4096, 300,
             {'data_dir': str(self.root), 'auto_server': True, 'server_python': '/fixture/python',
              'max_steps': 50, 'random_seed': 100}, self.root)
-        with patch('excutor.eviskill_runners.launcher.create_runner', return_value=Runner()):
+        with patch('excutor.runner_common.launcher.create_runner', return_value=Runner()):
             state = run_native(self.config, self.root / 'baseline', {})
         self.assertEqual(state['status'], 'completed', state)
         # Deliberately diagnose the second task, to verify task selection.
@@ -95,7 +95,7 @@ class AppWorldReplayTests(unittest.TestCase):
         before = tree_hashes(self.root / 'baseline')
         self.skill.write_text('Original file has since changed.')
         runner = Runner(success=True)
-        with patch('excutor.eviskill_runners.launcher.create_runner', return_value=runner) as create:
+        with patch('excutor.runner_common.launcher.create_runner', return_value=runner) as create:
             state = run_validation(self.patch_file, self.root / 'out', {})
         self.assertEqual(state['status'], 'completed', state)
         self.assertEqual(state['comparison']['outcome'], 'repaired')
@@ -123,7 +123,7 @@ class AppWorldReplayTests(unittest.TestCase):
         link.symlink_to(dataset, target_is_directory=True)
         original_target = link.readlink()
         runner = Runner(success=True)
-        with patch('excutor.eviskill_runners.launcher.create_runner', return_value=runner):
+        with patch('excutor.runner_common.launcher.create_runner', return_value=runner):
             state = run_validation(self.patch_file, self.root / 'out', {})
         self.assertEqual(state['status'], 'completed', state)
         self.assertEqual(state['comparison']['outcome'], 'repaired')
@@ -155,7 +155,7 @@ class AppWorldReplayTests(unittest.TestCase):
             link.symlink_to(second, target_is_directory=True)
             return result
 
-        with patch('excutor.eviskill_runners.launcher.create_runner', return_value=Runner(success=True)), \
+        with patch('excutor.runner_common.launcher.create_runner', return_value=Runner(success=True)), \
              patch('method.skillpatch.patch_validation.appworld_patch_validation.pipeline.run_native',
                    side_effect=replay_then_retarget) as replay:
             state = run_validation(self.patch_file, self.root / 'out', {})
@@ -165,7 +165,7 @@ class AppWorldReplayTests(unittest.TestCase):
         self.assertEqual(read(self.root / 'out/result.json')['status'], 'failed')
 
     def test_prepare_cli_does_not_start_runner(self):
-        with patch('excutor.eviskill_runners.launcher.create_runner') as create:
+        with patch('excutor.runner_common.launcher.create_runner') as create:
             code = main(['validate-appworld-patch', '--patch', str(self.patch_file),
                          '--output', str(self.root / 'prepare'), '--prepare-only'])
         self.assertEqual(code, 0)
@@ -173,13 +173,13 @@ class AppWorldReplayTests(unittest.TestCase):
         self.assertEqual(read(self.root / 'prepare/result.json')['status'], 'prepared')
 
     def test_still_failed_is_valid_completed_replay(self):
-        with patch('excutor.eviskill_runners.launcher.create_runner', return_value=Runner()):
+        with patch('excutor.runner_common.launcher.create_runner', return_value=Runner()):
             state = run_validation(self.patch_file, self.root / 'out', {})
         self.assertEqual(state['status'], 'completed', state)
         self.assertEqual(state['comparison']['outcome'], 'still_failed')
 
     def test_invalid_official_evaluation_is_not_scored_as_failure(self):
-        with patch('excutor.eviskill_runners.launcher.create_runner', return_value=Runner(invalid=True)):
+        with patch('excutor.runner_common.launcher.create_runner', return_value=Runner(invalid=True)):
             state = run_validation(self.patch_file, self.root / 'out', {})
         self.assertEqual(state['status'], 'failed', state)
         self.assertNotIn('comparison', state)
@@ -188,13 +188,13 @@ class AppWorldReplayTests(unittest.TestCase):
         row = read(self.source)
         row['instruction'] = 'Changed task.'
         write_json(self.source, row)
-        with patch('excutor.eviskill_runners.launcher.create_runner') as create:
+        with patch('excutor.runner_common.launcher.create_runner') as create:
             with self.assertRaises(ValueError):
                 run_validation(self.patch_file, self.root / 'out', {})
         create.assert_not_called()
 
     def test_previous_patches_preserved_when_next_candidate_added(self):
-        with patch('excutor.eviskill_runners.launcher.create_runner', return_value=Runner()):
+        with patch('excutor.runner_common.launcher.create_runner', return_value=Runner()):
             first = run_validation(self.patch_file, self.root / 'first-replay', {})
         self.assertEqual(first['status'], 'completed', first)
         second_patch = self.generate(Path(first['comparison']['candidate_trajectory']), 'second',

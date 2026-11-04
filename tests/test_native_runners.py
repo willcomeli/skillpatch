@@ -4,11 +4,13 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock
 
-from excutor.eviskill_runners import AlfWorldRunner, ScienceWorldRunner, AppWorldRunner
-from excutor.eviskill_runners import scienceworld_runner
+from excutor.alfworld_runners import AlfWorldRunner
+from excutor.scienceworld_runners import ScienceWorldRunner
+from excutor.appworld_runners import AppWorldRunner
+from excutor.scienceworld_runners import runner as scienceworld_runner
 
 
-class EviSkillRunnerTests(unittest.TestCase):
+class NativeRunnerTests(unittest.TestCase):
     def test_all_native_entry_points_are_available(self):
         for runner in (AlfWorldRunner, ScienceWorldRunner, AppWorldRunner):
             self.assertTrue(callable(runner.run_task))

@@ -10,7 +10,7 @@ import unittest
 from unittest.mock import Mock, call, patch
 from urllib.error import HTTPError, URLError
 
-from excutor.eviskill_runners.launcher import ChatClient, run_native
+from excutor.runner_common.launcher import ChatClient, run_native
 from set_up.native_config import NativeRunConfig, load_native_config
 
 
@@ -58,7 +58,7 @@ class NativeModelRetryTests(unittest.TestCase):
 
     def test_explicit_stream_requirement_negotiates_without_changing_model_parameters(self):
         client = self.client(2)
-        with patch('excutor.eviskill_runners.launcher.urlopen', side_effect=[
+        with patch('excutor.runner_common.launcher.urlopen', side_effect=[
                 self.stream_required_error(), self.streaming_response(), self.streaming_response()]) as request:
             self.assertEqual(client.chat(self.messages), 'print(1)')
             self.assertEqual(client.chat(self.messages), 'print(1)')
@@ -69,15 +69,15 @@ class NativeModelRetryTests(unittest.TestCase):
 
     def test_interrupted_stream_is_retried_in_full_and_not_returned_as_partial_action(self):
         client = self.client(1)
-        with patch('excutor.eviskill_runners.launcher.urlopen', side_effect=[
+        with patch('excutor.runner_common.launcher.urlopen', side_effect=[
                 self.stream_required_error(), self.streaming_response(False), self.streaming_response()]), \
-             patch('excutor.eviskill_runners.launcher.time.sleep'):
+             patch('excutor.runner_common.launcher.time.sleep'):
             self.assertEqual(client.chat(self.messages), 'print(1)')
         self.assertEqual(client.retry_count, 1)
 
     def test_other_bad_requests_do_not_enable_streaming(self):
         client = self.client(2)
-        with patch('excutor.eviskill_runners.launcher.urlopen', side_effect=self.http_error(400)) as request:
+        with patch('excutor.runner_common.launcher.urlopen', side_effect=self.http_error(400)) as request:
             with self.assertRaisesRegex(ValueError, '400'):
                 client.chat(self.messages)
         self.assertFalse(client.stream_required)
@@ -85,7 +85,7 @@ class NativeModelRetryTests(unittest.TestCase):
 
     def test_stream_can_be_selected_by_execution_role_configuration(self):
         client = ChatClient(self.config, {**self.environment, 'EXECUTION_STREAM': 'true'})
-        with patch('excutor.eviskill_runners.launcher.urlopen', return_value=self.streaming_response()) as request:
+        with patch('excutor.runner_common.launcher.urlopen', return_value=self.streaming_response()) as request:
             self.assertEqual(client.chat(self.messages), 'print(1)')
         self.assertTrue(json.loads(request.call_args.args[0].data)['stream'])
 
@@ -95,9 +95,9 @@ class NativeModelRetryTests(unittest.TestCase):
         for error in errors:
             with self.subTest(error=type(error).__name__, status=getattr(error, 'code', None)):
                 client = self.client(2)
-                with patch('excutor.eviskill_runners.launcher.urlopen',
+                with patch('excutor.runner_common.launcher.urlopen',
                            side_effect=[error, self.response()]) as request, \
-                     patch('excutor.eviskill_runners.launcher.time.sleep') as sleep:
+                     patch('excutor.runner_common.launcher.time.sleep') as sleep:
                     self.assertEqual(client.chat(self.messages), 'print(1)')
                 self.assertEqual(request.call_count, 2)
                 first, second = [entry.args[0] for entry in request.call_args_list]
@@ -114,8 +114,8 @@ class NativeModelRetryTests(unittest.TestCase):
                 client = self.client(2)
                 errors = ([URLError('TLS EOF') for _ in range(3)] if kind == 'transport'
                           else [self.http_error(503) for _ in range(3)])
-                with patch('excutor.eviskill_runners.launcher.urlopen', side_effect=errors) as request, \
-                     patch('excutor.eviskill_runners.launcher.time.sleep') as sleep:
+                with patch('excutor.runner_common.launcher.urlopen', side_effect=errors) as request, \
+                     patch('excutor.runner_common.launcher.time.sleep') as sleep:
                     with self.assertRaises(URLError if kind == 'transport' else ValueError):
                         client.chat(self.messages)
                 self.assertEqual(request.call_count, 3)
@@ -124,9 +124,9 @@ class NativeModelRetryTests(unittest.TestCase):
 
     def test_http_403_is_not_retried(self):
         client = self.client(3)
-        with patch('excutor.eviskill_runners.launcher.urlopen',
+        with patch('excutor.runner_common.launcher.urlopen',
                    side_effect=self.http_error(403)) as request, \
-             patch('excutor.eviskill_runners.launcher.time.sleep') as sleep:
+             patch('excutor.runner_common.launcher.time.sleep') as sleep:
             with self.assertRaisesRegex(ValueError, '403'):
                 client.chat(self.messages)
         self.assertEqual(request.call_count, 1)
@@ -139,8 +139,8 @@ class NativeModelRetryTests(unittest.TestCase):
         for index, response in enumerate(responses):
             with self.subTest(response=index):
                 client = self.client(3)
-                with patch('excutor.eviskill_runners.launcher.urlopen', return_value=response) as request, \
-                     patch('excutor.eviskill_runners.launcher.time.sleep') as sleep:
+                with patch('excutor.runner_common.launcher.urlopen', return_value=response) as request, \
+                     patch('excutor.runner_common.launcher.time.sleep') as sleep:
                     with self.assertRaises(ValueError):
                         client.chat(self.messages)
                 self.assertEqual(request.call_count, 1)
@@ -151,9 +151,9 @@ class NativeModelRetryTests(unittest.TestCase):
         for content, finish in [('', 'stop'), ('   ', 'stop'), (None, 'stop'), ('partial code', 'length')]:
             with self.subTest(content=content, finish=finish):
                 client = self.client(2)
-                with patch('excutor.eviskill_runners.launcher.urlopen', side_effect=[
+                with patch('excutor.runner_common.launcher.urlopen', side_effect=[
                         self.response(content, finish), self.response('print(2)')]) as request, \
-                     patch('excutor.eviskill_runners.launcher.time.sleep'):
+                     patch('excutor.runner_common.launcher.time.sleep'):
                     self.assertEqual(client.chat(self.messages), 'print(2)')
                 self.assertEqual((client.request_attempts, client.retry_count), (2, 1))
                 self.assertEqual(request.call_args_list[0].args[0].data, request.call_args_list[1].args[0].data)
@@ -161,9 +161,9 @@ class NativeModelRetryTests(unittest.TestCase):
     def test_incomplete_response_budget_is_bounded_and_diagnostic_is_saved(self):
         client = self.client(2)
         client.diagnostics_path = self.root / 'responses.jsonl'
-        with patch('excutor.eviskill_runners.launcher.urlopen', side_effect=[
+        with patch('excutor.runner_common.launcher.urlopen', side_effect=[
                 self.response('', 'length') for _ in range(3)]) as request, \
-             patch('excutor.eviskill_runners.launcher.time.sleep'):
+             patch('excutor.runner_common.launcher.time.sleep'):
             with self.assertRaisesRegex(ValueError, "finish_reason='length', content_chars=0"):
                 client.chat(self.messages)
         self.assertEqual(request.call_count, 3)
@@ -174,8 +174,8 @@ class NativeModelRetryTests(unittest.TestCase):
     def test_default_zero_preserves_single_attempt_behavior(self):
         self.assertEqual(self.config.max_retries, 0)
         client = ChatClient(self.config, self.environment)
-        with patch('excutor.eviskill_runners.launcher.urlopen', side_effect=URLError('TLS EOF')) as request, \
-             patch('excutor.eviskill_runners.launcher.time.sleep') as sleep:
+        with patch('excutor.runner_common.launcher.urlopen', side_effect=URLError('TLS EOF')) as request, \
+             patch('excutor.runner_common.launcher.time.sleep') as sleep:
             with self.assertRaises(URLError):
                 client.chat(self.messages)
         self.assertEqual(request.call_count, 1)
@@ -217,9 +217,9 @@ class NativeModelRetryTests(unittest.TestCase):
                 responses = [self.response(), URLError('TLS EOF'),
                              self.response() if succeeds else URLError('TLS EOF')]
                 output = self.root / f'run-{succeeds}'
-                with patch('excutor.eviskill_runners.launcher.create_runner', return_value=runner), \
-                     patch('excutor.eviskill_runners.launcher.urlopen', side_effect=responses), \
-                     patch('excutor.eviskill_runners.launcher.time.sleep'):
+                with patch('excutor.runner_common.launcher.create_runner', return_value=runner), \
+                     patch('excutor.runner_common.launcher.urlopen', side_effect=responses), \
+                     patch('excutor.runner_common.launcher.time.sleep'):
                     state = run_native(client.config, output, self.environment)
                 self.assertEqual(state['status'], 'completed' if succeeds else 'backend_error', state)
                 self.assertEqual(state['model_requests'], {'attempts': 3, 'retries': 1})

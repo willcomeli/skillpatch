@@ -35,10 +35,10 @@ class AppWorldFullTests(unittest.TestCase):
             'base_url_env = "DEEPSEEK_BASE_URL"\nbase_url = "https://fixture.invalid"'))
         self.inputs_seen = []
         self.world = Runner()
-        runner_patch = patch('excutor.eviskill_runners.launcher.create_runner', return_value=self.world)
+        runner_patch = patch('excutor.runner_common.launcher.create_runner', return_value=self.world)
         self.runner_factory = runner_patch.start()
         self.addCleanup(runner_patch.stop)
-        network_patch = patch('excutor.eviskill_runners.launcher.urlopen',
+        network_patch = patch('excutor.runner_common.launcher.urlopen',
                               side_effect=AssertionError('No live model requests in full-run tests'))
         self.network = network_patch.start()
         self.addCleanup(network_patch.stop)
@@ -170,7 +170,7 @@ class AppWorldFullTests(unittest.TestCase):
         self.runner_factory.assert_not_called()
 
     def test_subset_manifest_is_rejected_before_any_method_or_collection(self):
-        with patch('excutor.eviskill_runners.launcher.create_runner', return_value=Runner()):
+        with patch('excutor.runner_common.launcher.create_runner', return_value=Runner()):
             collected = collect(self.execution_config, self.root / 'subset', self.environment, limit=1)
         subset = Path(collected['manifest_path'])
         self.assertEqual(len(load_manifest(subset)['rows']), 1)

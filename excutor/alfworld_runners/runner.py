@@ -12,8 +12,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from .action_runtime import ALFWORLD_ACTION_HISTORY_LENGTH
-from .agents import AlfWorldActionAgent
+from ..runner_common.action_runtime import ALFWORLD_ACTION_HISTORY_LENGTH
+from .agent import AlfWorldActionAgent
 from .task_family import detect_alfworld_task_family, normalize_alfworld_task_family
 
 

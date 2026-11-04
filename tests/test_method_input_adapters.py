@@ -187,6 +187,6 @@ class SharedExecutionBridgeTests(unittest.TestCase):
                 self.assertEqual(read_json(cfg.tasks_path), ['task-one'])
                 self.assertIn('Check the environment', cfg.skill_path.read_text())
                 return {'status': 'completed', 'task_results': [str(output / 'tasks/one.json')]}
-            with patch('excutor.eviskill_runners.launcher.run_native', native):
+            with patch('excutor.runner_common.launcher.run_native', native):
                 SharedExecutorBridge({}).run(dict(config=str(config), task_ref='task-one'), '',
                                              self.root / dataset, skill_dir=bundle)

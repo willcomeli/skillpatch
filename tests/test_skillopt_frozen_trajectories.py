@@ -53,7 +53,7 @@ class SkillOptFrozenTrajectoryTests(unittest.TestCase):
             def close(self):
                 pass
 
-        runner_patch = patch('excutor.eviskill_runners.launcher.create_runner', side_effect=lambda *args: Runner())
+        runner_patch = patch('excutor.runner_common.launcher.create_runner', side_effect=lambda *args: Runner())
         runner_patch.start()
         self.addCleanup(runner_patch.stop)
 

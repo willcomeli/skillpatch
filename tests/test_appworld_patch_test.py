@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from excutor.executor_adapter.storage import sha256_file, write_json
 from excutor.excutor_runners.patch_sidecars import load_sidecars, write_sidecars
-from excutor.eviskill_runners.launcher import FileSkillBank
+from excutor.runner_common.launcher import FileSkillBank
 from excutor.patch_delivery.skill_bank import PatchedSkillBank
 from set_up.appworld_patch_test import evaluate, training_entries
 from set_up.appworld_smoke_inputs import _execution_toml

@@ -49,7 +49,7 @@ class BudgetRerunTests(unittest.TestCase):
                     archive = output / 'tasks/task_000001.json'
                     row = {'max_steps': 300, 'patch_deployment': {}}
                     if name == 'skillpatch':
-                        from excutor.eviskill_runners.launcher import FileSkillBank
+                        from excutor.runner_common.launcher import FileSkillBank
                         from excutor.patch_delivery.skill_bank import PatchedSkillBank
                         row['patch_deployment']['skill_digest'] = PatchedSkillBank(FileSkillBank(config.skill_path), kwargs['patch_skill_dir']).digest
                     write_json(archive, row)

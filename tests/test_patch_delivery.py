@@ -15,7 +15,9 @@ from excutor.excutor_runners.benchflow import BenchFlowBackend
 from excutor.excutor_runners.patch_sidecars import write_sidecars
 from excutor.excutors import Executor
 from excutor.patch_delivery.skill_bank import PatchedSkillBank, optional_skill_patches
-from excutor.eviskill_runners import AlfWorldRunner, ScienceWorldRunner, AppWorldRunner
+from excutor.alfworld_runners import AlfWorldRunner
+from excutor.scienceworld_runners import ScienceWorldRunner
+from excutor.appworld_runners import AppWorldRunner
 from set_up.cli import main
 
 

@@ -9,7 +9,7 @@ from pathlib import Path
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
-from excutor.eviskill_runners.appworld_manifests import load_official_appworld_split
+from excutor.appworld_runners.manifests import load_official_appworld_split
 from excutor.executor_adapter.storage import now, sha256_file, tree_hashes, write_json
 from set_up.appworld_smoke import METHODS, ROOT, RUNNERS, prepare_method_configs
 from set_up.appworld_smoke_inputs import _execution_toml, prepare_inputs
