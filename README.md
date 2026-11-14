@@ -1,27 +1,32 @@
-# SkillPatch rebuild
+# SkillPatch
 
 SkillPatch 整理版：将命令入口、共享任务执行器、方法输入适配、Agent harness 和方法实现分开组织。
 
 ## 代码结构
 
 ```text
-set_up/                 配置、环境变量和命令入口
+set_up/cli.py           统一命令入口
+set_up/                 配置和数据集工作流
+scripts/                用 CLI 编排实验
+data/scienceworld/      分集、来源和重建代码
 excutor/                四个数据集的共享执行器及 Skill/补丁交付
 method_input_adapters/  SkillPatch、SkillOpt、Trace2Skill 输入适配
-method/skillpatch/      诊断、补丁生成、整合及 SkillsBench 补丁验证
+method/skillpatch/      诊断、普通和 Boundary-Aware 补丁生成、整合及验证
 method/trace2skill/     Trace2Skill 源码快照
 method/skillopt/        SkillOpt 固定版本子模块
 method/eviskill/        EviSkill 源码快照
 harness/                公共 AgentClient、OpenHands/Codex 子模块和本地补丁
-prompts/                执行提示增强和方法提示词
+prompts/                方法提示词、ScienceWorld 动作提示词和执行提示增强
 configs/                配置样例
 tests/                  工程测试
 context.py              SkillPatch 诊断上下文呈现和摘要
 ```
 
-目录名 `excutor` 保留当前代码中的拼写。仓库包含源代码、配置、提示词和测试；数据集、凭据、安装环境及本机实验产物需单独准备。
+目录名 `excutor` 保留当前代码中的拼写。仓库包含源代码、配置、提示词、测试和 ScienceWorld 分集清单。数据环境、凭据和实验运行结果由本机准备。
 
 ## 获取与测试
+
+只跑 ScienceWorld 时可使用 [独立安装说明](configs/scienceworld/README.md)。下列命令安装全仓工程测试和可选对比方法的依赖。
 
 ```bash
 git clone --recurse-submodules https://github.com/willcomeli/skillpatch.git
@@ -40,10 +45,21 @@ uv pip install --python .venvs/methods/bin/python --no-deps -e ./method/skillopt
 
 ```bash
 .venvs/methods/bin/python -m set_up.cli --help
-.venvs/methods/bin/python -m method_input_adapters --help
+.venvs/methods/bin/python -m set_up.cli scienceworld --help
+.venvs/methods/bin/python -m set_up.cli appworld --help
+.venvs/methods/bin/python -m set_up.cli skillsbench experiment --help
+.venvs/methods/bin/python -m set_up.cli baselines --help
 ```
 
-`set_up.cli` 提供 `prepare`、`run`、`diagnose` / `stage1`、`stage2`、`stage3`、`validate-patch`。方法适配入口提供 `skillopt-export`、`skillopt-train`、`trace2skill-export`、`trace2skill-evolve`。
+`prepare`、`run` 根据执行 TOML 的 `task.benchmark` 分流到 ScienceWorld、AppWorld、SkillsBench 或 ALFWorld。单条 SkillPatch 操作使用 `stage1`、`stage2`、`stage3`，再按数据集执行验证。
+
+ScienceWorld 从采轨迹到评测的自动脚本如下。三组共享执行设置，两个打补丁策略共享 Stage 1 索引。
+
+```bash
+scripts/scienceworld/run.sh runs/scienceworld/reproduction --method all
+```
+
+`appworld experiment` 和 `skillsbench experiment` 按各自的任务协议运行所选对比方法，也可以用 `baselines` 调用 SkillOpt、Trace2Skill 的导出或演化命令。各入口复用现有执行和方法适配层。
 
 先修改 `configs/` 中的数据集、执行器和模型路径。部分配置记录了原开发机的绝对路径，不能直接当作新机器配置。密钥通过环境变量或仓库外的 `--env-file` 提供。
 
@@ -59,7 +75,7 @@ cd harness/openhands
 uv sync --locked --no-dev --python 3.12
 ```
 
-`harness.agent_client.AgentClient` 默认使用该子模块 `.venv/bin/openhands`，也可通过配置提供命令。接口见 [AgentClient](harness/agent-client.md)。Codex 当前作为源码参考，尚未接入该接口。
+`harness.agent_client.AgentClient` 默认使用该子模块 `.venv/bin/openhands`，也可通过配置提供命令。接口见 [AgentClient](harness/agent-client.md)。配置也支持 Codex harness。
 
 ## 当前能力与边界
 
@@ -69,10 +85,11 @@ uv sync --locked --no-dev --python 3.12
 - 三个原生执行器可注入 Skill 正文和文本参考文档；可执行脚本和二进制 Skill 资源暂不支持交付。
 - EviSkill 方法目前保留源码，尚未实现方法输入适配层。生成候选与正式执行评分验证是两个独立步骤。
 
-工程测试覆盖输入转换、评分有效性、分集、候选执行与资源保留。真实运行验证过 SkillsBench；其他数据集的完整实验仍需各自环境。
+工程测试覆盖输入转换、评分有效性、分集、候选执行与资源保留。ScienceWorld 已完成 Vanilla、普通 SkillPatch 和 Boundary-Aware 的 211 条 test 评测。其他数据集按各自环境和工作流配置。
 
 ## 实验编排与代理
 
 - [SkillsBench 三方法实验、并发基线与超时复核](scripts/skillsbench/README.md)
 - [AppWorld 实验脚本](scripts/appworld/README.md)
+- [ScienceWorld 分集和 SkillPatch 运行步骤](configs/scienceworld/README.md)
 - [Docker 安装代理转发与 SSH 隧道](scripts/proxy/README.md)

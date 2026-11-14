@@ -16,6 +16,13 @@ SIDECAR_MARKDOWN = "SKILL_PATCHES.md"
 SIDECAR_MANIFEST = "SKILL_PATCHES.json"
 PRESENTATION_SIDECAR = "sidecar_v1"
 PRESENTATION_INLINE = "inline_v1"
+NOTE_EXAMPLE_SIDECAR_VERSION = 2
+
+_SIDECAR_MODES = {1: PRESENTATION_SIDECAR, NOTE_EXAMPLE_SIDECAR_VERSION: "sidecar_v2"}
+_SECTION_HEADINGS = {
+    1: (("when_to_use", "When to use"), ("how_to_interpret", "How to interpret")),
+    NOTE_EXAMPLE_SIDECAR_VERSION: (("note", "Note"), ("example", "Example")),
+}
 
 
 def _checked_target(skill_root: Path, target: dict) -> None:
@@ -52,17 +59,17 @@ def _checked_target(skill_root: Path, target: dict) -> None:
         raise ValueError("Sidecar target quote is absent or ambiguous")
 
 
-def _validate_entries(skill_root: Path, entries: list[dict]) -> None:
+def _validate_entries(skill_root: Path, entries: list[dict], schema_version: int) -> None:
     if skill_root.is_symlink() or not skill_root.is_dir():
         raise ValueError("Sidecar Skill root must be a real directory")
     if not (skill_root / "SKILL.md").is_file() or (skill_root / "SKILL.md").is_symlink():
         raise ValueError("Sidecar Skill root must contain an original SKILL.md")
     if not isinstance(entries, list) or not entries:
         raise ValueError("Sidecar entries must be a nonempty ordered list")
+    fields = {field for field, _ in _SECTION_HEADINGS[schema_version]}
     seen = set()
     for entry in entries:
-        if not isinstance(entry, dict) or set(entry) != {
-                "entry_id", "target", "when_to_use", "how_to_interpret"}:
+        if not isinstance(entry, dict) or set(entry) != {"entry_id", "target", *fields}:
             raise ValueError("Sidecar entry fields do not match the schema")
         identifier = entry["entry_id"]
         if not isinstance(identifier, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,199}", identifier):
@@ -70,7 +77,7 @@ def _validate_entries(skill_root: Path, entries: list[dict]) -> None:
         if identifier in seen:
             raise ValueError("Duplicate sidecar patch entry ID")
         seen.add(identifier)
-        for field in ("when_to_use", "how_to_interpret"):
+        for field, _ in _SECTION_HEADINGS[schema_version]:
             value = entry[field]
             if not isinstance(value, str) or not value.strip() or len(value) > 16000:
                 raise ValueError("Both sidecar patch sections must be bounded nonempty text")
@@ -81,11 +88,15 @@ def _validate_entries(skill_root: Path, entries: list[dict]) -> None:
         _checked_target(skill_root, entry["target"])
 
 
-def _markdown(entries: list[dict]) -> tuple[str, list[dict]]:
+def _markdown(entries: list[dict], schema_version: int) -> tuple[str, list[dict]]:
     header = ("# Skill interpretation patches\n\n"
               "Read the original Skill and these supplements before applying its instructions. "
               "Each supplement applies only to its named target and when its condition holds. "
               "Keep the original Skill instructions for all other cases.\n\n")
+    if schema_version == NOTE_EXAMPLE_SIDECAR_VERSION:
+        header = ("# Skill interpretation patches\n\n"
+                  "Read each Note as guidance for its named target and use the Example "
+                  "to understand one application of that guidance.\n\n")
     pieces = [header]
     spans = [{"origin": "sidecar_metadata", "entry_ids": [],
               "rendered_start": 0, "rendered_end": len(header)}]
@@ -98,9 +109,9 @@ def _markdown(entries: list[dict]) -> tuple[str, list[dict]]:
                  f"Target file: {json.dumps(target['relative_path'], ensure_ascii=False)}\n\n"
                  f"Target scope: `{target['scope']}`\n\n"
                  f"Target version: `{target['version']}`\n\n"
-                 f"### Target instruction\n\n{fence}text\n{quote}\n{fence}\n\n"
-                 f"### When to use\n\n{entry['when_to_use'].strip()}\n\n"
-                 f"### How to interpret\n\n{entry['how_to_interpret'].strip()}\n\n")
+                 f"### Target instruction\n\n{fence}text\n{quote}\n{fence}\n\n")
+        for field, heading in _SECTION_HEADINGS[schema_version]:
+            block += f"### {heading}\n\n{entry[field].strip()}\n\n"
         block = block.replace("\r\n", "\n")
         pieces.append(block)
         spans.append({"origin": "patch", "entry_ids": [entry["entry_id"]],
@@ -109,14 +120,17 @@ def _markdown(entries: list[dict]) -> tuple[str, list[dict]]:
     return "".join(pieces), spans
 
 
-def write_sidecars(skill_root: Path, entries: list[dict]) -> dict:
+def write_sidecars(skill_root: Path, entries: list[dict], *, schema_version: int = 1) -> dict:
     """Add a manifest and Markdown file; refuse to overwrite either reserved path."""
+    if type(schema_version) is not int or schema_version not in _SIDECAR_MODES:
+        raise ValueError("Unsupported sidecar manifest schema")
     for name in (SIDECAR_MARKDOWN, SIDECAR_MANIFEST):
         if (skill_root / name).exists() or (skill_root / name).is_symlink():
             raise ValueError("Original Skill already contains a reserved sidecar path")
-    _validate_entries(skill_root, entries)
-    markdown, spans = _markdown(entries)
-    manifest = {"schema_version": 1, "presentation_mode": PRESENTATION_SIDECAR, "entries": entries}
+    _validate_entries(skill_root, entries, schema_version)
+    markdown, spans = _markdown(entries, schema_version)
+    manifest = {"schema_version": schema_version, "presentation_mode": _SIDECAR_MODES[schema_version],
+                "entries": entries}
     encoded = json.dumps(manifest, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False) + "\n"
     (skill_root / SIDECAR_MARKDOWN).write_bytes(markdown.encode("utf-8"))
     (skill_root / SIDECAR_MANIFEST).write_bytes(encoded.encode("utf-8"))
@@ -142,11 +156,12 @@ def load_sidecars(skill_root: Path) -> dict | None:
     except (UnicodeError, json.JSONDecodeError) as error:
         raise ValueError("Invalid sidecar manifest JSON") from error
     if (not isinstance(payload, dict) or set(payload) != {"schema_version", "presentation_mode", "entries"}
-            or type(payload["schema_version"]) is not int or payload["schema_version"] != 1
-            or payload["presentation_mode"] != PRESENTATION_SIDECAR):
+            or type(payload["schema_version"]) is not int or payload["schema_version"] not in _SIDECAR_MODES
+            or payload["presentation_mode"] != _SIDECAR_MODES[payload["schema_version"]]):
         raise ValueError("Unsupported sidecar manifest schema or presentation mode")
-    _validate_entries(skill_root, payload["entries"])
-    markdown, _ = _markdown(payload["entries"])
+    version = payload["schema_version"]
+    _validate_entries(skill_root, payload["entries"], version)
+    markdown, _ = _markdown(payload["entries"], version)
     if paths[0].read_bytes() != markdown.encode("utf-8"):
         raise ValueError("Sidecar Markdown differs from its declared interpretation patches")
     return payload

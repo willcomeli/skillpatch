@@ -45,6 +45,8 @@ def render_patch(pack: Path, patch: SkillPatch, output: Path, *,
     # Locating the owning Skill does not require headings or numbered steps.
     from .targets import locate_skill_root
 
+    if not isinstance(patch, SkillPatch):
+        raise ValueError("SkillsBench patch validation supports standard SkillPatch candidates only")
     before = tree_hashes(pack)
     source = target_file(pack, patch)
     if output.exists() or output.is_symlink() or output.resolve().is_relative_to(pack.resolve()):

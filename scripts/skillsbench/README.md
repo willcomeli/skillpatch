@@ -33,15 +33,15 @@ sandbox 预算保持原样；额外 idle 超时关闭。不添加执行总时限
 
 ```bash
 # 只准备一个任务，核验快照及 prompt，不调用模型、不启动容器。
-.venvs/methods/bin/python -m scripts.skillsbench.experiment \
+.venvs/methods/bin/python -m set_up.cli skillsbench experiment \
   --prepare-only --tasks citation-check --output runs/skillsbench/preview
 
 # 全量，预算全部来自各自任务。
-.venvs/methods/bin/python -m scripts.skillsbench.experiment \
+.venvs/methods/bin/python -m set_up.cli skillsbench experiment \
   --output runs/skillsbench/full
 
 # 使用相同配置恢复；保留已完成项，不自动重试失败项。
-.venvs/methods/bin/python -m scripts.skillsbench.experiment \
+.venvs/methods/bin/python -m set_up.cli skillsbench experiment \
   --output runs/skillsbench/full --resume
 ```
 

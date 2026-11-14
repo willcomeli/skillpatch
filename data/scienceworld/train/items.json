@@ -1,0 +1,962 @@
+[
+  {
+    "task_id": "scienceworld_train_001386",
+    "task": "task-6-lifespan-(shortest-lived)",
+    "task_family": "task-6-lifespan-(shortest-lived)",
+    "variation_idx": 6,
+    "simplification": "easy",
+    "skillnet_index": 1386,
+    "split": "train",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_train_001271",
+    "task": "task-4-grow-fruit",
+    "task_family": "task-4-grow-fruit",
+    "variation_idx": 16,
+    "simplification": "easy",
+    "skillnet_index": 1271,
+    "split": "train",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_train_001400",
+    "task": "task-4-grow-plant",
+    "task_family": "task-4-grow-plant",
+    "variation_idx": 66,
+    "simplification": "easy",
+    "skillnet_index": 1400,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_000105",
+    "task": "task-1-boil",
+    "task_family": "task-1-boil",
+    "variation_idx": 11,
+    "simplification": "easy",
+    "skillnet_index": 105,
+    "split": "train",
+    "recommended_max_steps": 100
+  },
+  {
+    "task_id": "scienceworld_train_000334",
+    "task": "task-2a-test-conductivity",
+    "task_family": "task-2a-test-conductivity",
+    "variation_idx": 258,
+    "simplification": "easy",
+    "skillnet_index": 334,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_001408",
+    "task": "task-2-power-component",
+    "task_family": "task-2-power-component",
+    "variation_idx": 2,
+    "simplification": "easy",
+    "skillnet_index": 1408,
+    "split": "train",
+    "recommended_max_steps": 20
+  },
+  {
+    "task_id": "scienceworld_train_000368",
+    "task": "task-10-measure-melting-point-(known-substance)",
+    "task_family": "task-10-measure-melting-point-(known-substance)",
+    "variation_idx": 172,
+    "simplification": "easy",
+    "skillnet_index": 368,
+    "split": "train",
+    "recommended_max_steps": 120
+  },
+  {
+    "task_id": "scienceworld_train_001422",
+    "task": "task-5-chemistry-mix-paint-(secondary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(secondary-color)",
+    "variation_idx": 17,
+    "simplification": "easy",
+    "skillnet_index": 1422,
+    "split": "train",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_train_000897",
+    "task": "task-1-change-the-state-of-matter-of",
+    "task_family": "task-1-change-the-state-of-matter-of",
+    "variation_idx": 0,
+    "simplification": "easy",
+    "skillnet_index": 897,
+    "split": "train",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_train_001286",
+    "task": "task-4-grow-plant",
+    "task_family": "task-4-grow-plant",
+    "variation_idx": 80,
+    "simplification": "easy",
+    "skillnet_index": 1286,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_001188",
+    "task": "task-4-grow-plant",
+    "task_family": "task-4-grow-plant",
+    "variation_idx": 86,
+    "simplification": "easy",
+    "skillnet_index": 1188,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_000621",
+    "task": "task-1-boil",
+    "task_family": "task-1-boil",
+    "variation_idx": 7,
+    "simplification": "easy",
+    "skillnet_index": 621,
+    "split": "train",
+    "recommended_max_steps": 100
+  },
+  {
+    "task_id": "scienceworld_train_000025",
+    "task": "task-3-find-plant",
+    "task_family": "task-3-find-plant",
+    "variation_idx": 131,
+    "simplification": "easy",
+    "skillnet_index": 25,
+    "split": "train",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_train_001035",
+    "task": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "variation_idx": 14,
+    "simplification": "easy",
+    "skillnet_index": 1035,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_000142",
+    "task": "task-3-find-non-living-thing",
+    "task_family": "task-3-find-non-living-thing",
+    "variation_idx": 49,
+    "simplification": "easy",
+    "skillnet_index": 142,
+    "split": "train",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_train_001343",
+    "task": "task-7-identify-life-stages-1",
+    "task_family": "task-7-identify-life-stages-1",
+    "variation_idx": 5,
+    "simplification": "easy",
+    "skillnet_index": 1343,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_000792",
+    "task": "task-3-find-non-living-thing",
+    "task_family": "task-3-find-non-living-thing",
+    "variation_idx": 13,
+    "simplification": "easy",
+    "skillnet_index": 792,
+    "split": "train",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_train_001109",
+    "task": "task-3-find-animal",
+    "task_family": "task-3-find-animal",
+    "variation_idx": 49,
+    "simplification": "easy",
+    "skillnet_index": 1109,
+    "split": "train",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_train_001283",
+    "task": "task-5-chemistry-mix",
+    "task_family": "task-5-chemistry-mix",
+    "variation_idx": 2,
+    "simplification": "easy",
+    "skillnet_index": 1283,
+    "split": "train",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_train_001468",
+    "task": "task-2-power-component-(renewable-vs-nonrenewable-energy)",
+    "task_family": "task-2-power-component-(renewable-vs-nonrenewable-energy)",
+    "variation_idx": 2,
+    "simplification": "easy",
+    "skillnet_index": 1468,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_001111",
+    "task": "task-3-find-plant",
+    "task_family": "task-3-find-plant",
+    "variation_idx": 124,
+    "simplification": "easy",
+    "skillnet_index": 1111,
+    "split": "train",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_train_000180",
+    "task": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "variation_idx": 9,
+    "simplification": "easy",
+    "skillnet_index": 180,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_000889",
+    "task": "task-3-find-living-thing",
+    "task_family": "task-3-find-living-thing",
+    "variation_idx": 199,
+    "simplification": "easy",
+    "skillnet_index": 889,
+    "split": "train",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_train_000361",
+    "task": "task-2a-test-conductivity",
+    "task_family": "task-2a-test-conductivity",
+    "variation_idx": 211,
+    "simplification": "easy",
+    "skillnet_index": 361,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_001124",
+    "task": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "variation_idx": 3,
+    "simplification": "easy",
+    "skillnet_index": 1124,
+    "split": "train",
+    "recommended_max_steps": 12
+  },
+  {
+    "task_id": "scienceworld_train_000224",
+    "task": "task-5-chemistry-mix",
+    "task_family": "task-5-chemistry-mix",
+    "variation_idx": 10,
+    "simplification": "easy",
+    "skillnet_index": 224,
+    "split": "train",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_train_000914",
+    "task": "task-7-identify-life-stages-1",
+    "task_family": "task-7-identify-life-stages-1",
+    "variation_idx": 2,
+    "simplification": "easy",
+    "skillnet_index": 914,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_000226",
+    "task": "task-1-boil",
+    "task_family": "task-1-boil",
+    "variation_idx": 13,
+    "simplification": "easy",
+    "skillnet_index": 226,
+    "split": "train",
+    "recommended_max_steps": 100
+  },
+  {
+    "task_id": "scienceworld_train_000640",
+    "task": "task-2a-test-conductivity-of-unknown-substances",
+    "task_family": "task-2a-test-conductivity-of-unknown-substances",
+    "variation_idx": 422,
+    "simplification": "easy",
+    "skillnet_index": 640,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_001282",
+    "task": "task-6-lifespan-(longest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived)",
+    "variation_idx": 84,
+    "simplification": "easy",
+    "skillnet_index": 1282,
+    "split": "train",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_train_000747",
+    "task": "task-6-lifespan-(longest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived)",
+    "variation_idx": 28,
+    "simplification": "easy",
+    "skillnet_index": 747,
+    "split": "train",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_train_001099",
+    "task": "task-3-find-living-thing",
+    "task_family": "task-3-find-living-thing",
+    "variation_idx": 91,
+    "simplification": "easy",
+    "skillnet_index": 1099,
+    "split": "train",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_train_000729",
+    "task": "task-3-find-living-thing",
+    "task_family": "task-3-find-living-thing",
+    "variation_idx": 114,
+    "simplification": "easy",
+    "skillnet_index": 729,
+    "split": "train",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_train_001122",
+    "task": "task-3-find-animal",
+    "task_family": "task-3-find-animal",
+    "variation_idx": 181,
+    "simplification": "easy",
+    "skillnet_index": 1122,
+    "split": "train",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_train_000619",
+    "task": "task-7-identify-life-stages-2",
+    "task_family": "task-7-identify-life-stages-2",
+    "variation_idx": 0,
+    "simplification": "easy",
+    "skillnet_index": 619,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_001209",
+    "task": "task-3-find-non-living-thing",
+    "task_family": "task-3-find-non-living-thing",
+    "variation_idx": 53,
+    "simplification": "easy",
+    "skillnet_index": 1209,
+    "split": "train",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_train_000276",
+    "task": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "variation_idx": 22,
+    "simplification": "easy",
+    "skillnet_index": 276,
+    "split": "train",
+    "recommended_max_steps": 12
+  },
+  {
+    "task_id": "scienceworld_train_000450",
+    "task": "task-1-change-the-state-of-matter-of",
+    "task_family": "task-1-change-the-state-of-matter-of",
+    "variation_idx": 8,
+    "simplification": "easy",
+    "skillnet_index": 450,
+    "split": "train",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_train_000328",
+    "task": "task-2a-test-conductivity-of-unknown-substances",
+    "task_family": "task-2a-test-conductivity-of-unknown-substances",
+    "variation_idx": 148,
+    "simplification": "easy",
+    "skillnet_index": 328,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_000292",
+    "task": "task-1-melt",
+    "task_family": "task-1-melt",
+    "variation_idx": 12,
+    "simplification": "easy",
+    "skillnet_index": 292,
+    "split": "train",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_train_000110",
+    "task": "task-2a-test-conductivity-of-unknown-substances",
+    "task_family": "task-2a-test-conductivity-of-unknown-substances",
+    "variation_idx": 130,
+    "simplification": "easy",
+    "skillnet_index": 110,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_001148",
+    "task": "task-3-find-animal",
+    "task_family": "task-3-find-animal",
+    "variation_idx": 82,
+    "simplification": "easy",
+    "skillnet_index": 1148,
+    "split": "train",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_train_000196",
+    "task": "task-1-freeze",
+    "task_family": "task-1-freeze",
+    "variation_idx": 5,
+    "simplification": "easy",
+    "skillnet_index": 196,
+    "split": "train",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_train_000493",
+    "task": "task-6-lifespan-(longest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived)",
+    "variation_idx": 10,
+    "simplification": "easy",
+    "skillnet_index": 493,
+    "split": "train",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_train_000514",
+    "task": "task-5-chemistry-mix-paint-(secondary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(secondary-color)",
+    "variation_idx": 3,
+    "simplification": "easy",
+    "skillnet_index": 514,
+    "split": "train",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_train_001341",
+    "task": "task-4-grow-fruit",
+    "task_family": "task-4-grow-fruit",
+    "variation_idx": 19,
+    "simplification": "easy",
+    "skillnet_index": 1341,
+    "split": "train",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_train_000766",
+    "task": "task-10-use-thermometer",
+    "task_family": "task-10-use-thermometer",
+    "variation_idx": 163,
+    "simplification": "easy",
+    "skillnet_index": 766,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_000238",
+    "task": "task-2a-test-conductivity",
+    "task_family": "task-2a-test-conductivity",
+    "variation_idx": 648,
+    "simplification": "easy",
+    "skillnet_index": 238,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_001030",
+    "task": "task-6-lifespan-(longest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived)",
+    "variation_idx": 91,
+    "simplification": "easy",
+    "skillnet_index": 1030,
+    "split": "train",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_train_001203",
+    "task": "task-3-find-living-thing",
+    "task_family": "task-3-find-living-thing",
+    "variation_idx": 47,
+    "simplification": "easy",
+    "skillnet_index": 1203,
+    "split": "train",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_train_000574",
+    "task": "task-10-measure-melting-point-(known-substance)",
+    "task_family": "task-10-measure-melting-point-(known-substance)",
+    "variation_idx": 200,
+    "simplification": "easy",
+    "skillnet_index": 574,
+    "split": "train",
+    "recommended_max_steps": 120
+  },
+  {
+    "task_id": "scienceworld_train_000645",
+    "task": "task-1-freeze",
+    "task_family": "task-1-freeze",
+    "variation_idx": 4,
+    "simplification": "easy",
+    "skillnet_index": 645,
+    "split": "train",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_train_000618",
+    "task": "task-2a-test-conductivity-of-unknown-substances",
+    "task_family": "task-2a-test-conductivity-of-unknown-substances",
+    "variation_idx": 353,
+    "simplification": "easy",
+    "skillnet_index": 618,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_001351",
+    "task": "task-5-chemistry-mix",
+    "task_family": "task-5-chemistry-mix",
+    "variation_idx": 15,
+    "simplification": "easy",
+    "skillnet_index": 1351,
+    "split": "train",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_train_001472",
+    "task": "task-1-melt",
+    "task_family": "task-1-melt",
+    "variation_idx": 8,
+    "simplification": "easy",
+    "skillnet_index": 1472,
+    "split": "train",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_train_001313",
+    "task": "task-4-grow-fruit",
+    "task_family": "task-4-grow-fruit",
+    "variation_idx": 57,
+    "simplification": "easy",
+    "skillnet_index": 1313,
+    "split": "train",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_train_001365",
+    "task": "task-2-power-component",
+    "task_family": "task-2-power-component",
+    "variation_idx": 0,
+    "simplification": "easy",
+    "skillnet_index": 1365,
+    "split": "train",
+    "recommended_max_steps": 20
+  },
+  {
+    "task_id": "scienceworld_train_000326",
+    "task": "task-10-use-thermometer",
+    "task_family": "task-10-use-thermometer",
+    "variation_idx": 301,
+    "simplification": "easy",
+    "skillnet_index": 326,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_000331",
+    "task": "task-10-use-thermometer",
+    "task_family": "task-10-use-thermometer",
+    "variation_idx": 138,
+    "simplification": "easy",
+    "skillnet_index": 331,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_000899",
+    "task": "task-1-melt",
+    "task_family": "task-1-melt",
+    "variation_idx": 7,
+    "simplification": "easy",
+    "skillnet_index": 899,
+    "split": "train",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_train_001186",
+    "task": "task-3-find-non-living-thing",
+    "task_family": "task-3-find-non-living-thing",
+    "variation_idx": 55,
+    "simplification": "easy",
+    "skillnet_index": 1186,
+    "split": "train",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_train_000147",
+    "task": "task-4-grow-plant",
+    "task_family": "task-4-grow-plant",
+    "variation_idx": 38,
+    "simplification": "easy",
+    "skillnet_index": 147,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_001375",
+    "task": "task-7-identify-life-stages-1",
+    "task_family": "task-7-identify-life-stages-1",
+    "variation_idx": 0,
+    "simplification": "easy",
+    "skillnet_index": 1375,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_001327",
+    "task": "task-1-freeze",
+    "task_family": "task-1-freeze",
+    "variation_idx": 1,
+    "simplification": "easy",
+    "skillnet_index": 1327,
+    "split": "train",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_train_001340",
+    "task": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "variation_idx": 11,
+    "simplification": "easy",
+    "skillnet_index": 1340,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_001121",
+    "task": "task-3-find-animal",
+    "task_family": "task-3-find-animal",
+    "variation_idx": 40,
+    "simplification": "easy",
+    "skillnet_index": 1121,
+    "split": "train",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_train_000079",
+    "task": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "variation_idx": 45,
+    "simplification": "easy",
+    "skillnet_index": 79,
+    "split": "train",
+    "recommended_max_steps": 12
+  },
+  {
+    "task_id": "scienceworld_train_000847",
+    "task": "task-1-melt",
+    "task_family": "task-1-melt",
+    "variation_idx": 3,
+    "simplification": "easy",
+    "skillnet_index": 847,
+    "split": "train",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_train_000958",
+    "task": "task-10-measure-melting-point-(known-substance)",
+    "task_family": "task-10-measure-melting-point-(known-substance)",
+    "variation_idx": 216,
+    "simplification": "easy",
+    "skillnet_index": 958,
+    "split": "train",
+    "recommended_max_steps": 120
+  },
+  {
+    "task_id": "scienceworld_train_001092",
+    "task": "task-7-identify-life-stages-2",
+    "task_family": "task-7-identify-life-stages-2",
+    "variation_idx": 3,
+    "simplification": "easy",
+    "skillnet_index": 1092,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_001239",
+    "task": "task-4-grow-fruit",
+    "task_family": "task-4-grow-fruit",
+    "variation_idx": 66,
+    "simplification": "easy",
+    "skillnet_index": 1239,
+    "split": "train",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_train_000904",
+    "task": "task-7-identify-life-stages-1",
+    "task_family": "task-7-identify-life-stages-1",
+    "variation_idx": 1,
+    "simplification": "easy",
+    "skillnet_index": 904,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_001170",
+    "task": "task-3-find-plant",
+    "task_family": "task-3-find-plant",
+    "variation_idx": 83,
+    "simplification": "easy",
+    "skillnet_index": 1170,
+    "split": "train",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_train_000471",
+    "task": "task-6-lifespan-(shortest-lived)",
+    "task_family": "task-6-lifespan-(shortest-lived)",
+    "variation_idx": 19,
+    "simplification": "easy",
+    "skillnet_index": 471,
+    "split": "train",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_train_001242",
+    "task": "task-2-power-component",
+    "task_family": "task-2-power-component",
+    "variation_idx": 9,
+    "simplification": "easy",
+    "skillnet_index": 1242,
+    "split": "train",
+    "recommended_max_steps": 20
+  },
+  {
+    "task_id": "scienceworld_train_000174",
+    "task": "task-5-chemistry-mix-paint-(secondary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(secondary-color)",
+    "variation_idx": 12,
+    "simplification": "easy",
+    "skillnet_index": 174,
+    "split": "train",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_train_000392",
+    "task": "task-7-identify-life-stages-2",
+    "task_family": "task-7-identify-life-stages-2",
+    "variation_idx": 1,
+    "simplification": "easy",
+    "skillnet_index": 392,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_001290",
+    "task": "task-5-chemistry-mix",
+    "task_family": "task-5-chemistry-mix",
+    "variation_idx": 1,
+    "simplification": "easy",
+    "skillnet_index": 1290,
+    "split": "train",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_train_000760",
+    "task": "task-2-power-component-(renewable-vs-nonrenewable-energy)",
+    "task_family": "task-2-power-component-(renewable-vs-nonrenewable-energy)",
+    "variation_idx": 1,
+    "simplification": "easy",
+    "skillnet_index": 760,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_001369",
+    "task": "task-2-power-component",
+    "task_family": "task-2-power-component",
+    "variation_idx": 6,
+    "simplification": "easy",
+    "skillnet_index": 1369,
+    "split": "train",
+    "recommended_max_steps": 20
+  },
+  {
+    "task_id": "scienceworld_train_000202",
+    "task": "task-6-lifespan-(shortest-lived)",
+    "task_family": "task-6-lifespan-(shortest-lived)",
+    "variation_idx": 2,
+    "simplification": "easy",
+    "skillnet_index": 202,
+    "split": "train",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_train_000320",
+    "task": "task-7-identify-life-stages-2",
+    "task_family": "task-7-identify-life-stages-2",
+    "variation_idx": 2,
+    "simplification": "easy",
+    "skillnet_index": 320,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_000699",
+    "task": "task-10-use-thermometer",
+    "task_family": "task-10-use-thermometer",
+    "variation_idx": 270,
+    "simplification": "easy",
+    "skillnet_index": 699,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_000171",
+    "task": "task-3-find-plant",
+    "task_family": "task-3-find-plant",
+    "variation_idx": 103,
+    "simplification": "easy",
+    "skillnet_index": 171,
+    "split": "train",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_train_000081",
+    "task": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "variation_idx": 3,
+    "simplification": "easy",
+    "skillnet_index": 81,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_001345",
+    "task": "task-1-boil",
+    "task_family": "task-1-boil",
+    "variation_idx": 0,
+    "simplification": "easy",
+    "skillnet_index": 1345,
+    "split": "train",
+    "recommended_max_steps": 100
+  },
+  {
+    "task_id": "scienceworld_train_000923",
+    "task": "task-5-chemistry-mix-paint-(secondary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(secondary-color)",
+    "variation_idx": 9,
+    "simplification": "easy",
+    "skillnet_index": 923,
+    "split": "train",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_train_001211",
+    "task": "task-6-lifespan-(shortest-lived)",
+    "task_family": "task-6-lifespan-(shortest-lived)",
+    "variation_idx": 39,
+    "simplification": "easy",
+    "skillnet_index": 1211,
+    "split": "train",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_train_001221",
+    "task": "task-1-change-the-state-of-matter-of",
+    "task_family": "task-1-change-the-state-of-matter-of",
+    "variation_idx": 2,
+    "simplification": "easy",
+    "skillnet_index": 1221,
+    "split": "train",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_train_000956",
+    "task": "task-1-freeze",
+    "task_family": "task-1-freeze",
+    "variation_idx": 0,
+    "simplification": "easy",
+    "skillnet_index": 956,
+    "split": "train",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_train_001015",
+    "task": "task-2-power-component-(renewable-vs-nonrenewable-energy)",
+    "task_family": "task-2-power-component-(renewable-vs-nonrenewable-energy)",
+    "variation_idx": 3,
+    "simplification": "easy",
+    "skillnet_index": 1015,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_000436",
+    "task": "task-2-power-component-(renewable-vs-nonrenewable-energy)",
+    "task_family": "task-2-power-component-(renewable-vs-nonrenewable-energy)",
+    "variation_idx": 7,
+    "simplification": "easy",
+    "skillnet_index": 436,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_000353",
+    "task": "task-2a-test-conductivity",
+    "task_family": "task-2a-test-conductivity",
+    "variation_idx": 541,
+    "simplification": "easy",
+    "skillnet_index": 353,
+    "split": "train",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_train_000622",
+    "task": "task-10-measure-melting-point-(known-substance)",
+    "task_family": "task-10-measure-melting-point-(known-substance)",
+    "variation_idx": 143,
+    "simplification": "easy",
+    "skillnet_index": 622,
+    "split": "train",
+    "recommended_max_steps": 120
+  },
+  {
+    "task_id": "scienceworld_train_001219",
+    "task": "task-1-change-the-state-of-matter-of",
+    "task_family": "task-1-change-the-state-of-matter-of",
+    "variation_idx": 10,
+    "simplification": "easy",
+    "skillnet_index": 1219,
+    "split": "train",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_train_000953",
+    "task": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "variation_idx": 13,
+    "simplification": "easy",
+    "skillnet_index": 953,
+    "split": "train",
+    "recommended_max_steps": 12
+  }
+]

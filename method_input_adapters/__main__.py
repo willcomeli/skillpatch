@@ -5,15 +5,15 @@ import json
 from pathlib import Path
 
 
-def main(argv=None):
-    parser = argparse.ArgumentParser(prog='method-input-adapters')
-    commands = parser.add_subparsers(dest='command', required=True)
+def add_commands(commands):
     for name in ('skillopt-export', 'trace2skill-export'):
         sub = commands.add_parser(name)
+        sub.set_defaults(handler=run_command, baseline_action=name)
         sub.add_argument('sources', nargs='+', type=Path)
         sub.add_argument('--output', required=True, type=Path)
     for name in ('skillopt-train', 'trace2skill-evolve'):
         sub = commands.add_parser(name)
+        sub.set_defaults(handler=run_command, baseline_action=name)
         sub.add_argument('--output', required=True, type=Path)
         sub.add_argument('--env-file', type=Path)
         sub.add_argument('--model', default='deepseek-flash')
@@ -30,9 +30,11 @@ def main(argv=None):
             sub.add_argument('--initial-skill-dir', required=True, type=Path)
             sub.add_argument('--validation-manifest', type=Path)
             sub.add_argument('--max-output-tokens', type=int, default=32768)
-    args = parser.parse_args(argv)
-    if args.command.endswith('-export'):
-        if args.command == 'skillopt-export':
+
+
+def run_command(args):
+    if args.baseline_action.endswith('-export'):
+        if args.baseline_action == 'skillopt-export':
             from .skillopt.results import export_results
         else:
             from .trace2skill.results import export_results
@@ -42,7 +44,7 @@ def main(argv=None):
     from set_up.environment import load_environment
     environment = load_environment(args.env_file)
     options = dict(model=args.model, api_key_env=args.api_key_env, base_url_env=args.base_url_env)
-    if args.command == 'skillopt-train':
+    if args.baseline_action == 'skillopt-train':
         from .skillopt.training import train
         train(args.manifest, args.initial_skill, args.output, environment, config=args.config,
               frozen_trajectory_manifest=args.frozen_trajectory_manifest, **options)
@@ -52,6 +54,12 @@ def main(argv=None):
                validation_manifest=args.validation_manifest, max_output_tokens=args.max_output_tokens, **options)
     print(f'Output: {args.output.resolve()}')
     return 0
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(prog='method-input-adapters')
+    add_commands(parser.add_subparsers(dest='baseline_action', required=True))
+    return run_command(parser.parse_args(argv))
 
 
 if __name__ == '__main__':

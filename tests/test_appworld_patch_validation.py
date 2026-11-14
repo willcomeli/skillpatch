@@ -13,6 +13,7 @@ from method.skillpatch.patch_diagnosis.discovery import run_discovery
 from method.skillpatch.patch_generation.config import Stage2Config
 from method.skillpatch.patch_generation.pipeline import run_stage2
 from method.skillpatch.patch_validation.appworld_patch_validation.pipeline import run_validation, read
+from method_input_adapters.skillpatch import build_diagnosis_context
 from set_up.native_config import NativeRunConfig
 from set_up.cli import main
 
@@ -108,6 +109,17 @@ class AppWorldReplayTests(unittest.TestCase):
         self.assertEqual(tree_hashes(self.root / 'baseline'), before)
         self.assertTrue(runner.closed)
         self.assertEqual(state['acceptance'], 'not_decided')
+
+    def test_legacy_diagnosis_with_source_context_still_prepares_replay(self):
+        diagnosis = self.root / 'first-diagnosis'
+        result_path = diagnosis / 'result.json'
+        result = read(result_path)
+        result.pop('source_context_digest')
+        write_json(result_path, result)
+        write_json(diagnosis / 'input/source_context.json', build_diagnosis_context(self.source))
+
+        state = run_validation(self.patch_file, self.root / 'out', {}, prepare_only=True)
+        self.assertEqual(state['status'], 'prepared', state)
 
     def test_runtime_dataset_symlink_allows_replay_without_changing_source(self):
         baseline = self.root / 'baseline'

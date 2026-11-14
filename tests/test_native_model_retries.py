@@ -11,6 +11,8 @@ from unittest.mock import Mock, call, patch
 from urllib.error import HTTPError, URLError
 
 from excutor.runner_common.launcher import ChatClient, run_native
+from excutor.runner_common.model_errors import ModelActionBudgetExceeded
+from set_up.cli import main
 from set_up.native_config import NativeRunConfig, load_native_config
 
 
@@ -225,6 +227,40 @@ class NativeModelRetryTests(unittest.TestCase):
                 self.assertEqual(state['model_requests'], {'attempts': 3, 'retries': 1})
                 saved = json.loads((output / 'result.json').read_text())
                 self.assertEqual(saved['model_requests'], state['model_requests'])
+                runner.close.assert_called_once()
+
+
+    def test_scienceworld_cli_records_model_budget_skip_and_runs_next_task(self):
+        tasks = [{'task_id': task_id} for task_id in ('first', 'second', 'third')]
+        self.config.tasks_path.write_text(json.dumps(tasks))
+        config = self.root / 'scienceworld.toml'
+        config.write_text(
+            '[task]\nbenchmark="scienceworld"\npath="tasks.json"\nskill_mode="no-skill"\n'
+            '[agent]\nmodel="fixture-model"\n'
+            '[runtime.runner_options]\nremote_environment_url=""\nauto_server=true\n'
+        )
+        budget_error = ModelActionBudgetExceeded('finish_reason=length')
+        for name, flags, error, status, exit_code in (
+            ('skip', ['--skip-model-budget-errors'], budget_error, 'completed_with_skips', 0),
+            ('default', [], budget_error, 'backend_error', 2),
+            ('backend', ['--skip-model-budget-errors'], RuntimeError('simulator unavailable'), 'backend_error', 2),
+        ):
+            with self.subTest(name=name):
+                runner = Mock()
+                runner.run_task.side_effect = [tasks[0], error, tasks[2]]
+                output = self.root / name
+                with patch('excutor.runner_common.launcher.create_runner', return_value=runner):
+                    self.assertEqual(main(['run', '--config', str(config), '--output', str(output), *flags]), exit_code)
+                state = json.loads((output / 'result.json').read_text())
+                self.assertEqual(state['status'], status)
+                files = sorted(path.name for path in (output / 'tasks').glob('task_*.json'))
+                self.assertEqual(files, ['task_000001.json', 'task_000003.json'] if name == 'skip' else ['task_000001.json'])
+                if name == 'skip':
+                    self.assertEqual(state['skipped_tasks'], [{
+                        'input_index': 2, 'task': tasks[1],
+                        'error': 'ModelActionBudgetExceeded: finish_reason=length',
+                    }])
+                    self.assertEqual(state['errors'], [])
                 runner.close.assert_called_once()
 
 

@@ -70,12 +70,13 @@ def _is_bad_step(prev_obs: str, next_obs: str, action: str) -> bool:
     return str(prev_obs or "").strip() == str(next_obs or "").strip() and str(action or "") not in {"look", "look around", "inventory"}
 
 
-def _normalize_score(value: Any) -> float:
+def _normalize_score(value: Any, *, percentage: bool = False) -> float:
+    """Normalize declared percentages and retain the legacy unmarked score convention."""
     try:
         score = float(value or 0.0)
     except (TypeError, ValueError):
         return 0.0
-    if score > 1.0:
+    if percentage or score > 1.0:
         score = score / 100.0
     return max(0.0, min(1.0, score))
 
@@ -136,7 +137,7 @@ class RemoteScienceWorldEnv:
         raw_score = data.get("score", info.get("score"))
         info["_score_available"] = raw_score is not None
         if raw_score is not None:
-            info["_normalized_score"] = _normalize_score(raw_score)
+            info["_normalized_score"] = _normalize_score(raw_score, percentage=data.get("score_scale") == 100)
         return str(data.get("observation") or ""), info, str(data.get("instruction") or ref.get("task") or "")
 
     def step(self, action: str) -> Tuple[str, float, bool, Dict[str, Any]]:
@@ -144,7 +145,9 @@ class RemoteScienceWorldEnv:
         info = dict(data.get("info") or {})
         raw_score = data.get("score", info.get("score"))
         score_available = raw_score is not None
-        normalized_score = _normalize_score(raw_score) if score_available else 0.0
+        normalized_score = (
+            _normalize_score(raw_score, percentage=data.get("score_scale") == 100) if score_available else 0.0
+        )
         info["_score_available"] = score_available
         if score_available:
             info["_normalized_score"] = normalized_score

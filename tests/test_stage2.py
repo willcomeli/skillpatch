@@ -6,12 +6,12 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from excutor.executor_adapter.storage import write_json, tree_hashes
+from excutor.executor_adapter.storage import jsonable, write_json, tree_hashes
 from harness.agent_client import AgentResult
 from method.skillpatch.patch_diagnosis.config import load_discovery_config
 from method.skillpatch.patch_diagnosis.discovery import run_discovery
 from method.skillpatch.patch_generation.config import Stage2Config, load_stage2_config
-from method.skillpatch.patch_generation.source import load_source
+from method.skillpatch.patch_generation.source import load_diagnosis, load_patch, load_source
 from method.skillpatch.patch_generation.pipeline import run_stage2
 
 
@@ -64,8 +64,130 @@ class Stage2Tests(unittest.TestCase):
         self.assertEqual(generated['target']['relative_path'],'delivered_S0001/SKILL.md')
         self.assertEqual(generated['when_to_use'],self.patch_payload['when_to_use'])
         self.assertEqual(len(client.calls),1)
-        self.assertEqual(len(client.calls[0][2]),2)
+        self.assertEqual(client.calls[0][2], [
+            self.root / 'out/generation/input/request.json',
+            self.diagnosis / 'input/context.json',
+        ])
+        self.assertFalse((self.diagnosis / 'input/source_context.json').exists())
+        self.assertFalse((self.root / 'out/generation/input/source.json').exists())
+        self.assertFalse((self.root / 'out/generation/generation.json').exists())
+        self.assertFalse((self.root / 'out/source.json').exists())
         self.assertFalse((self.root/'out/cases').exists())
+
+    def test_reused_diagnosis_rejects_changes_before_calling_agent(self):
+        archive = load_diagnosis(self.diagnosis)
+        changed = {**self.report, 'summary': 'Changed diagnosis.'}
+        write_json(self.diagnosis / 'report.json', changed)
+        client = Client([])
+        state = run_stage2(archive, 'I000001', self.config, self.root / 'out', {}, client=client)
+        self.assertEqual(state['status'], 'failed', state)
+        self.assertIn('changed since loading', state['error'])
+        self.assertEqual(client.calls, [])
+
+    def test_shared_context_mutation_cannot_publish_patch(self):
+        class MutatingClient(Client):
+            def run(self, config, prompt, materials, output, environment, **kwargs):
+                result = super().run(config, prompt, materials, output, environment, **kwargs)
+                materials[1].write_text('{}')
+                return result
+
+        state = run_stage2(self.diagnosis, 'I000001', self.config, self.root / 'out', {},
+                           client=MutatingClient([self.patch_payload]))
+        self.assertEqual(state['status'], 'failed', state)
+        self.assertFalse((self.root / 'out/generation/patch.json').exists())
+
+    def test_candidate_archive_reads_both_formats_and_pins_the_patch(self):
+        output = self.root / 'out'
+        state = run_stage2(self.diagnosis, 'I000001', self.config, output, {},
+                           client=Client([self.patch_payload]))
+        path = Path(state['patch_path'])
+        patch, source, _ = load_patch(path)
+
+        changed = {'how_to_interpret': 'Compare the dates in UTC.'}
+        write_json(path, {**jsonable(patch), **changed})
+        write_json(path.with_name('response.json'), {**self.patch_payload, **changed})
+        with self.assertRaisesRegex(ValueError, 'generation record differs'):
+            load_patch(path)
+
+        write_json(path, patch)
+        write_json(path.with_name('response.json'), self.patch_payload)
+        write_json(output / 'result.json', {'status': 'generated', 'issue_id': 'I000001'})
+        write_json(output / 'source.json', {'diagnosis_dir': self.diagnosis, 'issue': source.conflict,
+                                           'input_digest': source.context.input_digest})
+        write_json(path.with_name('generation.json'), {'patch': patch,
+                                                     'source_digest': source.context.input_digest})
+        self.assertEqual(load_patch(path)[0], patch)
+
+    def boundary_inputs(self):
+        initial = {
+            'decision': {'target_step': 'Normalize dates before comparing.', 'decision_ref': 'T000001'},
+            'patch': {'status': 'candidate', 'reason': 'The trace compares unnormalized dates.',
+                      'note': 'Convert dates to UTC before comparing them.',
+                      'example': 'Two timestamps use different offsets. APPLY normalization to UTC.'},
+        }
+        reference = {
+            'pre_decision_state': 'Two date strings have different time zone offsets.',
+            'expected_use': 'APPLY',
+            'expected_behavior': 'Normalize both dates to the time zone requested by the task.',
+            'evidence_refs': ['S0001'],
+        }
+        case = {
+            **reference, 'case_id': 'INV-1', 'type': 'INV', 'changed_factor': 'requested time zone',
+            'held_fixed': ['dates use different offsets'],
+            'pre_decision_state': 'The task specifies a time zone other than UTC.',
+        }
+        return initial, {'reference': reference, 'boundary_cases': [case], 'unresolved': []}
+
+    def test_boundary_induction_revises_and_loads_source_bound_patch(self):
+        initial, proposal = self.boundary_inputs()
+        revised = {**initial['patch'], 'note': 'Convert dates to the time zone requested by the task.'}
+        client = Client([initial, proposal, revised])
+        output = self.root / 'out'
+        before = tree_hashes(self.diagnosis)
+
+        state = run_stage2(self.diagnosis, 'I000001', self.config, output, {},
+                           induction='boundary-aware', client=client)
+        self.assertEqual(state['status'], 'generated', state)
+        self.assertEqual(tree_hashes(self.diagnosis), before)
+        self.assertEqual([call[2][1] for call in client.calls], [self.diagnosis / 'input/context.json'] * 3)
+        self.assertIn('Boundary Test Proposer', client.calls[1][1])
+        proposer_request = json.loads(client.calls[1][2][0].read_text())
+        revision_request = json.loads(client.calls[2][2][0].read_text())
+        self.assertEqual(proposer_request['current_patch']['note'], initial['patch']['note'])
+        self.assertEqual(revision_request['boundary_cases'], proposal['boundary_cases'])
+        self.assertEqual(revision_request['decision_ref'], initial['decision']['decision_ref'])
+        self.assertEqual(revision_request['anchor'], self.row['retrieved_memory_text'])
+
+        patch, source, _ = load_patch(Path(state['patch_path']))
+        self.assertEqual(patch.format, 'note_example_v1')
+        self.assertEqual(patch.revision, 1)
+        self.assertEqual(patch.target, source.conflict.target)
+        self.assertEqual(patch.note, revised['note'])
+        self.assertEqual(patch.example, revised['example'])
+
+    def test_boundary_induction_retains_initial_patch_without_cases(self):
+        initial, _ = self.boundary_inputs()
+        client = Client([initial, {'reference': None, 'boundary_cases': [],
+                                   'unresolved': ['No supported variant.']}])
+        state = run_stage2(self.diagnosis, 'I000001', self.config, self.root / 'out', {},
+                           induction='boundary-aware', client=client)
+        self.assertEqual(state['status'], 'generated', state)
+        self.assertEqual(len(client.calls), 2)
+        patch, _, _ = load_patch(Path(state['patch_path']))
+        self.assertEqual(patch.revision, 0)
+        self.assertEqual(patch.note, initial['patch']['note'])
+
+    def test_boundary_induction_rejects_case_with_unknown_evidence(self):
+        initial, proposal = self.boundary_inputs()
+        proposal['boundary_cases'][0]['evidence_refs'] = ['not-in-context']
+        client = Client([initial, proposal])
+        output = self.root / 'out'
+        state = run_stage2(self.diagnosis, 'I000001', self.config, output, {},
+                           induction='boundary-aware', client=client)
+        self.assertEqual(state['status'], 'failed', state)
+        self.assertIn('evidence_refs', state['error'])
+        self.assertEqual(len(client.calls), 2)
+        self.assertFalse((output / 'generation/patch.json').exists())
 
     def test_no_patch_has_no_patch_artifact(self):
         for status in ('unpatchable','insufficient_evidence'):
@@ -159,5 +281,6 @@ class Stage2Tests(unittest.TestCase):
                 '--config','unused','--output',str(self.root/'out')])
         self.assertEqual(code,0)
         self.assertNotIn('generate_only',run.call_args.kwargs)
+        self.assertEqual(run.call_args.kwargs['induction'], 'standard')
 
 if __name__=='__main__':unittest.main()

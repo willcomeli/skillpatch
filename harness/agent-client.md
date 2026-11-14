@@ -14,7 +14,7 @@ result = AgentClient().run(
 )
 ```
 
-输出为 AgentResult：status、output_dir、report_path、final_text、return_code、errors。配置用 api_key_env 指定凭据变量名；command 可以替换本地 CLI 可执行入口。仅支持 OpenHands headless JSON 协议，不把其他程序冒充支持的 harness。
+输出为 AgentResult：status、output_dir、report_path、final_text、return_code、errors。配置用 api_key_env 指定凭据变量名；command 可以替换本地 CLI 可执行入口。配置支持 OpenHands headless JSON 和 Codex JSON 两种 harness。
 
 材料保持为文件路径，不插入整个上下文正文。客户端将 prompt 和材料路径写入会话 prompt.md，要求 Agent 输出到 workspace/report.json；report_name 可供其他阶段自定义。日志和会话写入 output，使用独立的持久化目录及环境覆盖。
 

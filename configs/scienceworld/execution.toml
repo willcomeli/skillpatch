@@ -1,0 +1,32 @@
+# Default to train. Use --task-manifest to select val or test.
+[task]
+benchmark = "scienceworld"
+path = "../../data/scienceworld/train/items.json"
+skill_mode = "with-skill"
+skill_path = "../../method/eviskill/skills/scienceworld_initial.md"
+
+[agent]
+name = "native"
+model_env = "EXECUTION_MODEL"
+api_key_env = "EXECUTION_API_KEY"
+base_url_env = "EXECUTION_BASE_URL"
+temperature = 0.0
+max_tokens = 4096
+max_retries = 0
+
+[runtime]
+backend = "eviskill"
+timeout_sec = 300
+
+[runtime.runner_options]
+remote_environment_url = ""
+auto_server = true
+remote_timeout = 180
+max_steps = 100
+scienceworld_env_step_limit = 100
+action_history_length = 8
+use_admissible_actions = false
+parallel_workers = 1
+
+[output]
+root = "../../runs/scienceworld"

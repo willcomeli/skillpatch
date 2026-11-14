@@ -64,6 +64,15 @@ class NativeCliTests(unittest.TestCase):
                     self.assertEqual(bool(plan['patch_skill_dir']), patched)
                     self.assertEqual((output / 'input/SKILL.md').read_text(), 'Check dates.')
 
+    def test_prepare_can_override_task_manifest(self):
+        config = self.config('scienceworld')
+        selected = self.root / 'val.json'
+        selected.write_text('[{"task_id":"val_1"},{"task_id":"val_2"}]')
+        output = self.root / 'validation-prepared'
+        self.assertEqual(self.invoke(config, output, ['--task-manifest', str(selected)]), 0)
+        self.assertEqual(json.loads((output / 'plan.json').read_text())['task_count'], 2)
+        self.assertEqual(load_native_config(config).tasks_path, self.root / 'tasks.json')
+
     def test_factory_chooses_matching_runner_and_agent(self):
         for benchmark in ('alfworld', 'scienceworld', 'appworld'):
             config = load_native_config(self.config(benchmark))

@@ -1,20 +1,19 @@
 """Benchmark-independent diagnosis context rendering and digests."""
 
-import hashlib
 import json
 from pathlib import Path
 from typing import Any
 
 from method_input_adapters.skillpatch.models import DiagnosisContext
-from excutor.executor_adapter.storage import jsonable
+from excutor.executor_adapter.storage import json_digest, jsonable
+
+
+def context_digest(fields: dict) -> str:
+    return json_digest({key: value for key, value in fields.items() if key != "input_digest"})
 
 
 def refresh_input_digest(discovery: DiagnosisContext) -> str:
-    payload = jsonable(discovery)
-    del payload["input_digest"]
-    encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True,
-                         separators=(",", ":"), allow_nan=False).encode("utf-8")
-    discovery.input_digest = "sha256:" + hashlib.sha256(encoded).hexdigest()
+    discovery.input_digest = context_digest(jsonable(discovery))
     return discovery.input_digest
 
 

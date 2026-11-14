@@ -1,0 +1,130 @@
+{
+  "benchmark": "ScienceWorld",
+  "manifest_type": "stratified_train96_val48_testfull",
+  "source": "SkillNet public indices",
+  "source_format": "skillnet-indices",
+  "counts": {
+    "train": 96,
+    "val": 48,
+    "test": 211
+  },
+  "strategy": {
+    "train": "released four-example cohort for each of 24 task families",
+    "val": "released two-example cohort for each of 24 task families",
+    "test": "all SkillNet test instances in source order"
+  },
+  "family_counts": {
+    "train": {
+      "task-1-boil": 4,
+      "task-1-change-the-state-of-matter-of": 4,
+      "task-1-freeze": 4,
+      "task-1-melt": 4,
+      "task-10-measure-melting-point-(known-substance)": 4,
+      "task-10-use-thermometer": 4,
+      "task-2-power-component": 4,
+      "task-2-power-component-(renewable-vs-nonrenewable-energy)": 4,
+      "task-2a-test-conductivity": 4,
+      "task-2a-test-conductivity-of-unknown-substances": 4,
+      "task-3-find-animal": 4,
+      "task-3-find-living-thing": 4,
+      "task-3-find-non-living-thing": 4,
+      "task-3-find-plant": 4,
+      "task-4-grow-fruit": 4,
+      "task-4-grow-plant": 4,
+      "task-5-chemistry-mix": 4,
+      "task-5-chemistry-mix-paint-(secondary-color)": 4,
+      "task-5-chemistry-mix-paint-(tertiary-color)": 4,
+      "task-6-lifespan-(longest-lived)": 4,
+      "task-6-lifespan-(longest-lived-then-shortest-lived)": 4,
+      "task-6-lifespan-(shortest-lived)": 4,
+      "task-7-identify-life-stages-1": 4,
+      "task-7-identify-life-stages-2": 4
+    },
+    "val": {
+      "task-1-boil": 2,
+      "task-1-change-the-state-of-matter-of": 2,
+      "task-1-freeze": 2,
+      "task-1-melt": 2,
+      "task-10-measure-melting-point-(known-substance)": 2,
+      "task-10-use-thermometer": 2,
+      "task-2-power-component": 2,
+      "task-2-power-component-(renewable-vs-nonrenewable-energy)": 2,
+      "task-2a-test-conductivity": 2,
+      "task-2a-test-conductivity-of-unknown-substances": 2,
+      "task-3-find-animal": 2,
+      "task-3-find-living-thing": 2,
+      "task-3-find-non-living-thing": 2,
+      "task-3-find-plant": 2,
+      "task-4-grow-fruit": 2,
+      "task-4-grow-plant": 2,
+      "task-5-chemistry-mix": 2,
+      "task-5-chemistry-mix-paint-(secondary-color)": 2,
+      "task-5-chemistry-mix-paint-(tertiary-color)": 2,
+      "task-6-lifespan-(longest-lived)": 2,
+      "task-6-lifespan-(longest-lived-then-shortest-lived)": 2,
+      "task-6-lifespan-(shortest-lived)": 2,
+      "task-7-identify-life-stages-1": 2,
+      "task-7-identify-life-stages-2": 2
+    },
+    "test": {
+      "task-1-boil": 9,
+      "task-1-change-the-state-of-matter-of": 9,
+      "task-1-freeze": 9,
+      "task-1-melt": 9,
+      "task-10-measure-melting-point-(known-substance)": 10,
+      "task-10-use-thermometer": 10,
+      "task-2-power-component": 5,
+      "task-2-power-component-(renewable-vs-nonrenewable-energy)": 5,
+      "task-2a-test-conductivity": 10,
+      "task-2a-test-conductivity-of-unknown-substances": 10,
+      "task-3-find-animal": 10,
+      "task-3-find-living-thing": 10,
+      "task-3-find-non-living-thing": 10,
+      "task-3-find-plant": 10,
+      "task-4-grow-fruit": 10,
+      "task-4-grow-plant": 10,
+      "task-5-chemistry-mix": 8,
+      "task-5-chemistry-mix-paint-(secondary-color)": 9,
+      "task-5-chemistry-mix-paint-(tertiary-color)": 9,
+      "task-6-lifespan-(longest-lived)": 10,
+      "task-6-lifespan-(longest-lived-then-shortest-lived)": 10,
+      "task-6-lifespan-(shortest-lived)": 10,
+      "task-7-identify-life-stages-1": 5,
+      "task-7-identify-life-stages-2": 4
+    }
+  },
+  "source_sha256": {
+    "train": "c79eea7858383b829269986ee83d0d9a504533e7b4b3a5bc76e5bdc1e6999cd0",
+    "dev": "33de480fc2ddb8c7848ce088d1bba7e43ba2ce1fba941ada1fa36f24ee74d133",
+    "test": "d6fe951ee08bd5dbc08c72355bb68e672fd51a91e15dea1da57d0f794f1dedbe",
+    "max_steps": "035592f47fbe1309b6ed1a260b392a50d94d3163de951508a74e985d93048f73"
+  },
+  "source_hashes_verified": true,
+  "manifest_sha256": {
+    "train": "ebe78aaa76a8d6a0097cf512ee90d974a48a3f97e9f8762acb8e21343244d7a0",
+    "val": "9fff439af1a3e62cdbfee4d080207fe4a3289aa95d3b942531a0f5fdaa707d62",
+    "test": "fb1bf847b2f3bd3adf5dff613403ae0f25f839ad298aafe60057dcec6b446459"
+  },
+  "identity_checks": {
+    "duplicate_task_ids": 0,
+    "cross_split_overlap": {
+      "train/val": 0,
+      "train/test": 0,
+      "val/test": 0
+    }
+  },
+  "reconstruction": {
+    "status": "reconstructed",
+    "upstream_repository": "https://github.com/zjunlp/SkillNet",
+    "expected_upstream_commit": "edfbda23ac2108b59579300d050218558d20f6a6",
+    "eviskill_wrapper_hashes_verified": false,
+    "index_interpretation": "zero-based row position within each source split",
+    "simplification": "easy",
+    "step_budget": "skillnet",
+    "limitations": [
+      "Task records are reconstructed, not the original EviSkill wrapper JSON files.",
+      "Simplification and step-budget choices are explicit; equivalence to EviSkill's missing wrappers is unverified.",
+      "SDK/JVM version and runtime environment step limit are configured separately."
+    ]
+  }
+}

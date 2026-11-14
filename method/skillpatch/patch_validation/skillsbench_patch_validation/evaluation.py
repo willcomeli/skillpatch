@@ -106,7 +106,7 @@ def decide_validation(evaluations, comparisons, regression_comparisons, *, execu
 
 def evaluate_target(source, baseline, candidate, config, output, environment, *, client=None, progress=None):
     from excutor.executor_adapter.storage import write_json, jsonable
-    from method.skillpatch.patch_generation.session import run_session
+    from method.skillpatch.session import run_session
     payload = run_session(config, {'issue':jsonable(source.conflict),'execution_roles':{
         'source_run_id':source.context.run_id,'baseline_run_id':baseline.run_id,
         'candidate_run_id':candidate.run_id,

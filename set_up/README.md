@@ -33,7 +33,8 @@ prepare 不连接模型、不启动环境服务，只核验任务列表、Skill�
 
 原生输出：result.json 是本轮批量状态；单任务原生结果位于 tasks/task_000001.json 等。调用诊断适配器时传入单任务文件，不传入批量状态文件。它们仍是原生结果，没有转换成 ExecutionResult。
 
-诊断及 Stage2/Stage3 命令尚待后续恢复和接入，本次不改变其迁移范围。
+SkillPatch 单条命令为 `stage1`、`stage2`、`stage3`。ScienceWorld 的批量采集、诊断、补丁交付和评测通过 `set_up.cli scienceworld`，对应配置见 [ScienceWorld 说明](../configs/scienceworld/README.md)。
+AppWorld 和 SkillsBench 的完整比较使用 `set_up.cli appworld experiment` 与 `set_up.cli skillsbench experiment`。SkillOpt 和 Trace2Skill 的独立命令在 `set_up.cli baselines`。
 
 SkillsBench 不再设置额外的整轮执行墙钟时限，执行和验证时限由任务集及 BenchFlow 管理。
 历史 SkillsBench `runtime.timeout_sec` 可读取但被忽略，新配置无需填写；原生执行器的同名设置仍表示模型 HTTP 请求时限。
@@ -47,7 +48,7 @@ AppWorld 已生成补丁的原任务重跑入口为 `validate-appworld-patch`，
 `skillpatch/experiment.sh` 分别使用小规模和全部清单输入执行同一流程。
 参见 [AppWorld 脚本使用说明](../scripts/appworld/README.md)。
 
-三种方法的完整连通测试入口为 `scripts/appworld/smoke.sh`（`python -m set_up.appworld_smoke`）。
+三种方法的完整连通测试入口为 `scripts/appworld/smoke.sh`（`python -m set_up.cli appworld smoke`）。
 它复用同一冻结轨迹，运行 Trace2Skill、SkillOpt、SkillPatch 的实际改进及候选执行，
 保留前两种方法的官方 dev 验证，只有 SkillPatch 跳过 dev；是否提高得分不影响连通判定。
 

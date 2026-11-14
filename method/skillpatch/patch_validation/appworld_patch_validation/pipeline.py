@@ -11,7 +11,8 @@ from excutor.patch_delivery.skill_bank import PatchedSkillBank
 from excutor.excutor_runners.patch_sidecars import (
     SIDECAR_MANIFEST, SIDECAR_MARKDOWN, load_sidecars, write_sidecars,
 )
-from method.skillpatch.patch_consolidation.source import load_patch
+from method.skillpatch.patch_generation.models import SkillPatch
+from method.skillpatch.patch_generation.source import load_patch
 from method_input_adapters.archive import load_archive
 from method_input_adapters.skillpatch import build_diagnosis_context
 from set_up.environment import redact, redact_artifacts, secret_values
@@ -42,6 +43,8 @@ def archive_fingerprints(root):
 
 def load_source(patch_file):
     patch, source, episode = load_patch(patch_file)
+    if not isinstance(patch, SkillPatch):
+        raise ValueError("AppWorld patch replay supports standard SkillPatch candidates only")
     if source.context.benchmark != 'appworld':
         raise ValueError('AppWorld replay requires an AppWorld diagnosis')
     task_path = source.run_dir.resolve(strict=True)
@@ -65,7 +68,12 @@ def load_source(patch_file):
     if task_id != source.context.task_id or row.get('task_id') != task_id:
         raise ValueError('Source task identity differs from its input snapshot')
     current = build_diagnosis_context(task_path)
-    if jsonable(current) != read(source.diagnosis_dir / 'input/source_context.json'):
+    diagnosis = read(source.diagnosis_dir / 'result.json')
+    if 'source_context_digest' in diagnosis:
+        matches_context = current.input_digest == diagnosis['source_context_digest']
+    else:
+        matches_context = jsonable(current) == read(source.diagnosis_dir / 'input/source_context.json')
+    if not matches_context:
         raise ValueError('Source task no longer matches the diagnosed execution')
     baseline = load_archive(task_path)
     raw = read(root / 'config.json')
@@ -100,6 +108,8 @@ def load_source(patch_file):
 
 
 def render_candidate(patch, config, previous, output):
+    if not isinstance(patch, SkillPatch):
+        raise ValueError("AppWorld patch replay supports standard SkillPatch candidates only")
     if previous is not None:
         shutil.copytree(previous, output)
         entries = load_sidecars(output)['entries']

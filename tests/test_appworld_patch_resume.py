@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -25,7 +26,8 @@ class PatchResumeTests(unittest.TestCase):
                     {'task_id': 'success_1', 'score': 1}]
             with patch('set_up.appworld_patch_resume.load_manifest', return_value={'rows': rows}), \
                  patch('set_up.appworld_patch_resume.load_discovery_config'), \
-                 patch('set_up.appworld_patch_resume.issue_ids', return_value=['I000001']), \
+                 patch('set_up.appworld_patch_resume.load_diagnosis',
+                       return_value=SimpleNamespace(issue_ids=['I000001'])), \
                  patch('set_up.appworld_patch_resume.run_discovery') as diagnosis, \
                  patch('set_up.appworld_patch_resume.run_stage2', return_value={
                      'status': 'generated', 'patch_path': str(root / 'patch.json')}) as generation, \

@@ -1,0 +1,2112 @@
+[
+  {
+    "task_id": "scienceworld_test_000000",
+    "task": "task-1-boil",
+    "task_family": "task-1-boil",
+    "variation_idx": 21,
+    "simplification": "easy",
+    "skillnet_index": 0,
+    "split": "test",
+    "recommended_max_steps": 100
+  },
+  {
+    "task_id": "scienceworld_test_000001",
+    "task": "task-1-boil",
+    "task_family": "task-1-boil",
+    "variation_idx": 22,
+    "simplification": "easy",
+    "skillnet_index": 1,
+    "split": "test",
+    "recommended_max_steps": 100
+  },
+  {
+    "task_id": "scienceworld_test_000002",
+    "task": "task-1-boil",
+    "task_family": "task-1-boil",
+    "variation_idx": 23,
+    "simplification": "easy",
+    "skillnet_index": 2,
+    "split": "test",
+    "recommended_max_steps": 100
+  },
+  {
+    "task_id": "scienceworld_test_000003",
+    "task": "task-1-boil",
+    "task_family": "task-1-boil",
+    "variation_idx": 24,
+    "simplification": "easy",
+    "skillnet_index": 3,
+    "split": "test",
+    "recommended_max_steps": 100
+  },
+  {
+    "task_id": "scienceworld_test_000004",
+    "task": "task-1-boil",
+    "task_family": "task-1-boil",
+    "variation_idx": 25,
+    "simplification": "easy",
+    "skillnet_index": 4,
+    "split": "test",
+    "recommended_max_steps": 100
+  },
+  {
+    "task_id": "scienceworld_test_000005",
+    "task": "task-1-boil",
+    "task_family": "task-1-boil",
+    "variation_idx": 26,
+    "simplification": "easy",
+    "skillnet_index": 5,
+    "split": "test",
+    "recommended_max_steps": 100
+  },
+  {
+    "task_id": "scienceworld_test_000006",
+    "task": "task-1-boil",
+    "task_family": "task-1-boil",
+    "variation_idx": 27,
+    "simplification": "easy",
+    "skillnet_index": 6,
+    "split": "test",
+    "recommended_max_steps": 100
+  },
+  {
+    "task_id": "scienceworld_test_000007",
+    "task": "task-1-boil",
+    "task_family": "task-1-boil",
+    "variation_idx": 28,
+    "simplification": "easy",
+    "skillnet_index": 7,
+    "split": "test",
+    "recommended_max_steps": 100
+  },
+  {
+    "task_id": "scienceworld_test_000008",
+    "task": "task-1-boil",
+    "task_family": "task-1-boil",
+    "variation_idx": 29,
+    "simplification": "easy",
+    "skillnet_index": 8,
+    "split": "test",
+    "recommended_max_steps": 100
+  },
+  {
+    "task_id": "scienceworld_test_000009",
+    "task": "task-1-change-the-state-of-matter-of",
+    "task_family": "task-1-change-the-state-of-matter-of",
+    "variation_idx": 21,
+    "simplification": "easy",
+    "skillnet_index": 9,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000010",
+    "task": "task-1-change-the-state-of-matter-of",
+    "task_family": "task-1-change-the-state-of-matter-of",
+    "variation_idx": 22,
+    "simplification": "easy",
+    "skillnet_index": 10,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000011",
+    "task": "task-1-change-the-state-of-matter-of",
+    "task_family": "task-1-change-the-state-of-matter-of",
+    "variation_idx": 23,
+    "simplification": "easy",
+    "skillnet_index": 11,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000012",
+    "task": "task-1-change-the-state-of-matter-of",
+    "task_family": "task-1-change-the-state-of-matter-of",
+    "variation_idx": 24,
+    "simplification": "easy",
+    "skillnet_index": 12,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000013",
+    "task": "task-1-change-the-state-of-matter-of",
+    "task_family": "task-1-change-the-state-of-matter-of",
+    "variation_idx": 25,
+    "simplification": "easy",
+    "skillnet_index": 13,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000014",
+    "task": "task-1-change-the-state-of-matter-of",
+    "task_family": "task-1-change-the-state-of-matter-of",
+    "variation_idx": 26,
+    "simplification": "easy",
+    "skillnet_index": 14,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000015",
+    "task": "task-1-change-the-state-of-matter-of",
+    "task_family": "task-1-change-the-state-of-matter-of",
+    "variation_idx": 27,
+    "simplification": "easy",
+    "skillnet_index": 15,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000016",
+    "task": "task-1-change-the-state-of-matter-of",
+    "task_family": "task-1-change-the-state-of-matter-of",
+    "variation_idx": 28,
+    "simplification": "easy",
+    "skillnet_index": 16,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000017",
+    "task": "task-1-change-the-state-of-matter-of",
+    "task_family": "task-1-change-the-state-of-matter-of",
+    "variation_idx": 29,
+    "simplification": "easy",
+    "skillnet_index": 17,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000018",
+    "task": "task-1-freeze",
+    "task_family": "task-1-freeze",
+    "variation_idx": 21,
+    "simplification": "easy",
+    "skillnet_index": 18,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000019",
+    "task": "task-1-freeze",
+    "task_family": "task-1-freeze",
+    "variation_idx": 22,
+    "simplification": "easy",
+    "skillnet_index": 19,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000020",
+    "task": "task-1-freeze",
+    "task_family": "task-1-freeze",
+    "variation_idx": 23,
+    "simplification": "easy",
+    "skillnet_index": 20,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000021",
+    "task": "task-1-freeze",
+    "task_family": "task-1-freeze",
+    "variation_idx": 24,
+    "simplification": "easy",
+    "skillnet_index": 21,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000022",
+    "task": "task-1-freeze",
+    "task_family": "task-1-freeze",
+    "variation_idx": 25,
+    "simplification": "easy",
+    "skillnet_index": 22,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000023",
+    "task": "task-1-freeze",
+    "task_family": "task-1-freeze",
+    "variation_idx": 26,
+    "simplification": "easy",
+    "skillnet_index": 23,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000024",
+    "task": "task-1-freeze",
+    "task_family": "task-1-freeze",
+    "variation_idx": 27,
+    "simplification": "easy",
+    "skillnet_index": 24,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000025",
+    "task": "task-1-freeze",
+    "task_family": "task-1-freeze",
+    "variation_idx": 28,
+    "simplification": "easy",
+    "skillnet_index": 25,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000026",
+    "task": "task-1-freeze",
+    "task_family": "task-1-freeze",
+    "variation_idx": 29,
+    "simplification": "easy",
+    "skillnet_index": 26,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000027",
+    "task": "task-1-melt",
+    "task_family": "task-1-melt",
+    "variation_idx": 21,
+    "simplification": "easy",
+    "skillnet_index": 27,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000028",
+    "task": "task-1-melt",
+    "task_family": "task-1-melt",
+    "variation_idx": 22,
+    "simplification": "easy",
+    "skillnet_index": 28,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000029",
+    "task": "task-1-melt",
+    "task_family": "task-1-melt",
+    "variation_idx": 23,
+    "simplification": "easy",
+    "skillnet_index": 29,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000030",
+    "task": "task-1-melt",
+    "task_family": "task-1-melt",
+    "variation_idx": 24,
+    "simplification": "easy",
+    "skillnet_index": 30,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000031",
+    "task": "task-1-melt",
+    "task_family": "task-1-melt",
+    "variation_idx": 25,
+    "simplification": "easy",
+    "skillnet_index": 31,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000032",
+    "task": "task-1-melt",
+    "task_family": "task-1-melt",
+    "variation_idx": 26,
+    "simplification": "easy",
+    "skillnet_index": 32,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000033",
+    "task": "task-1-melt",
+    "task_family": "task-1-melt",
+    "variation_idx": 27,
+    "simplification": "easy",
+    "skillnet_index": 33,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000034",
+    "task": "task-1-melt",
+    "task_family": "task-1-melt",
+    "variation_idx": 28,
+    "simplification": "easy",
+    "skillnet_index": 34,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000035",
+    "task": "task-1-melt",
+    "task_family": "task-1-melt",
+    "variation_idx": 29,
+    "simplification": "easy",
+    "skillnet_index": 35,
+    "split": "test",
+    "recommended_max_steps": 80
+  },
+  {
+    "task_id": "scienceworld_test_000036",
+    "task": "task-10-measure-melting-point-(known-substance)",
+    "task_family": "task-10-measure-melting-point-(known-substance)",
+    "variation_idx": 327,
+    "simplification": "easy",
+    "skillnet_index": 36,
+    "split": "test",
+    "recommended_max_steps": 120
+  },
+  {
+    "task_id": "scienceworld_test_000037",
+    "task": "task-10-measure-melting-point-(known-substance)",
+    "task_family": "task-10-measure-melting-point-(known-substance)",
+    "variation_idx": 328,
+    "simplification": "easy",
+    "skillnet_index": 37,
+    "split": "test",
+    "recommended_max_steps": 120
+  },
+  {
+    "task_id": "scienceworld_test_000038",
+    "task": "task-10-measure-melting-point-(known-substance)",
+    "task_family": "task-10-measure-melting-point-(known-substance)",
+    "variation_idx": 329,
+    "simplification": "easy",
+    "skillnet_index": 38,
+    "split": "test",
+    "recommended_max_steps": 120
+  },
+  {
+    "task_id": "scienceworld_test_000039",
+    "task": "task-10-measure-melting-point-(known-substance)",
+    "task_family": "task-10-measure-melting-point-(known-substance)",
+    "variation_idx": 330,
+    "simplification": "easy",
+    "skillnet_index": 39,
+    "split": "test",
+    "recommended_max_steps": 120
+  },
+  {
+    "task_id": "scienceworld_test_000040",
+    "task": "task-10-measure-melting-point-(known-substance)",
+    "task_family": "task-10-measure-melting-point-(known-substance)",
+    "variation_idx": 331,
+    "simplification": "easy",
+    "skillnet_index": 40,
+    "split": "test",
+    "recommended_max_steps": 120
+  },
+  {
+    "task_id": "scienceworld_test_000041",
+    "task": "task-10-measure-melting-point-(known-substance)",
+    "task_family": "task-10-measure-melting-point-(known-substance)",
+    "variation_idx": 332,
+    "simplification": "easy",
+    "skillnet_index": 41,
+    "split": "test",
+    "recommended_max_steps": 120
+  },
+  {
+    "task_id": "scienceworld_test_000042",
+    "task": "task-10-measure-melting-point-(known-substance)",
+    "task_family": "task-10-measure-melting-point-(known-substance)",
+    "variation_idx": 333,
+    "simplification": "easy",
+    "skillnet_index": 42,
+    "split": "test",
+    "recommended_max_steps": 120
+  },
+  {
+    "task_id": "scienceworld_test_000043",
+    "task": "task-10-measure-melting-point-(known-substance)",
+    "task_family": "task-10-measure-melting-point-(known-substance)",
+    "variation_idx": 334,
+    "simplification": "easy",
+    "skillnet_index": 43,
+    "split": "test",
+    "recommended_max_steps": 120
+  },
+  {
+    "task_id": "scienceworld_test_000044",
+    "task": "task-10-measure-melting-point-(known-substance)",
+    "task_family": "task-10-measure-melting-point-(known-substance)",
+    "variation_idx": 335,
+    "simplification": "easy",
+    "skillnet_index": 44,
+    "split": "test",
+    "recommended_max_steps": 120
+  },
+  {
+    "task_id": "scienceworld_test_000045",
+    "task": "task-10-measure-melting-point-(known-substance)",
+    "task_family": "task-10-measure-melting-point-(known-substance)",
+    "variation_idx": 336,
+    "simplification": "easy",
+    "skillnet_index": 45,
+    "split": "test",
+    "recommended_max_steps": 120
+  },
+  {
+    "task_id": "scienceworld_test_000046",
+    "task": "task-10-use-thermometer",
+    "task_family": "task-10-use-thermometer",
+    "variation_idx": 405,
+    "simplification": "easy",
+    "skillnet_index": 46,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000047",
+    "task": "task-10-use-thermometer",
+    "task_family": "task-10-use-thermometer",
+    "variation_idx": 406,
+    "simplification": "easy",
+    "skillnet_index": 47,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000048",
+    "task": "task-10-use-thermometer",
+    "task_family": "task-10-use-thermometer",
+    "variation_idx": 407,
+    "simplification": "easy",
+    "skillnet_index": 48,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000049",
+    "task": "task-10-use-thermometer",
+    "task_family": "task-10-use-thermometer",
+    "variation_idx": 408,
+    "simplification": "easy",
+    "skillnet_index": 49,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000050",
+    "task": "task-10-use-thermometer",
+    "task_family": "task-10-use-thermometer",
+    "variation_idx": 409,
+    "simplification": "easy",
+    "skillnet_index": 50,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000051",
+    "task": "task-10-use-thermometer",
+    "task_family": "task-10-use-thermometer",
+    "variation_idx": 410,
+    "simplification": "easy",
+    "skillnet_index": 51,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000052",
+    "task": "task-10-use-thermometer",
+    "task_family": "task-10-use-thermometer",
+    "variation_idx": 411,
+    "simplification": "easy",
+    "skillnet_index": 52,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000053",
+    "task": "task-10-use-thermometer",
+    "task_family": "task-10-use-thermometer",
+    "variation_idx": 412,
+    "simplification": "easy",
+    "skillnet_index": 53,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000054",
+    "task": "task-10-use-thermometer",
+    "task_family": "task-10-use-thermometer",
+    "variation_idx": 413,
+    "simplification": "easy",
+    "skillnet_index": 54,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000055",
+    "task": "task-10-use-thermometer",
+    "task_family": "task-10-use-thermometer",
+    "variation_idx": 414,
+    "simplification": "easy",
+    "skillnet_index": 55,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000056",
+    "task": "task-2-power-component",
+    "task_family": "task-2-power-component",
+    "variation_idx": 15,
+    "simplification": "easy",
+    "skillnet_index": 56,
+    "split": "test",
+    "recommended_max_steps": 20
+  },
+  {
+    "task_id": "scienceworld_test_000057",
+    "task": "task-2-power-component",
+    "task_family": "task-2-power-component",
+    "variation_idx": 16,
+    "simplification": "easy",
+    "skillnet_index": 57,
+    "split": "test",
+    "recommended_max_steps": 20
+  },
+  {
+    "task_id": "scienceworld_test_000058",
+    "task": "task-2-power-component",
+    "task_family": "task-2-power-component",
+    "variation_idx": 17,
+    "simplification": "easy",
+    "skillnet_index": 58,
+    "split": "test",
+    "recommended_max_steps": 20
+  },
+  {
+    "task_id": "scienceworld_test_000059",
+    "task": "task-2-power-component",
+    "task_family": "task-2-power-component",
+    "variation_idx": 18,
+    "simplification": "easy",
+    "skillnet_index": 59,
+    "split": "test",
+    "recommended_max_steps": 20
+  },
+  {
+    "task_id": "scienceworld_test_000060",
+    "task": "task-2-power-component",
+    "task_family": "task-2-power-component",
+    "variation_idx": 19,
+    "simplification": "easy",
+    "skillnet_index": 60,
+    "split": "test",
+    "recommended_max_steps": 20
+  },
+  {
+    "task_id": "scienceworld_test_000061",
+    "task": "task-2-power-component-(renewable-vs-nonrenewable-energy)",
+    "task_family": "task-2-power-component-(renewable-vs-nonrenewable-energy)",
+    "variation_idx": 15,
+    "simplification": "easy",
+    "skillnet_index": 61,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000062",
+    "task": "task-2-power-component-(renewable-vs-nonrenewable-energy)",
+    "task_family": "task-2-power-component-(renewable-vs-nonrenewable-energy)",
+    "variation_idx": 16,
+    "simplification": "easy",
+    "skillnet_index": 62,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000063",
+    "task": "task-2-power-component-(renewable-vs-nonrenewable-energy)",
+    "task_family": "task-2-power-component-(renewable-vs-nonrenewable-energy)",
+    "variation_idx": 17,
+    "simplification": "easy",
+    "skillnet_index": 63,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000064",
+    "task": "task-2-power-component-(renewable-vs-nonrenewable-energy)",
+    "task_family": "task-2-power-component-(renewable-vs-nonrenewable-energy)",
+    "variation_idx": 18,
+    "simplification": "easy",
+    "skillnet_index": 64,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000065",
+    "task": "task-2-power-component-(renewable-vs-nonrenewable-energy)",
+    "task_family": "task-2-power-component-(renewable-vs-nonrenewable-energy)",
+    "variation_idx": 19,
+    "simplification": "easy",
+    "skillnet_index": 65,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000066",
+    "task": "task-2a-test-conductivity",
+    "task_family": "task-2a-test-conductivity",
+    "variation_idx": 675,
+    "simplification": "easy",
+    "skillnet_index": 66,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000067",
+    "task": "task-2a-test-conductivity",
+    "task_family": "task-2a-test-conductivity",
+    "variation_idx": 676,
+    "simplification": "easy",
+    "skillnet_index": 67,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000068",
+    "task": "task-2a-test-conductivity",
+    "task_family": "task-2a-test-conductivity",
+    "variation_idx": 677,
+    "simplification": "easy",
+    "skillnet_index": 68,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000069",
+    "task": "task-2a-test-conductivity",
+    "task_family": "task-2a-test-conductivity",
+    "variation_idx": 678,
+    "simplification": "easy",
+    "skillnet_index": 69,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000070",
+    "task": "task-2a-test-conductivity",
+    "task_family": "task-2a-test-conductivity",
+    "variation_idx": 679,
+    "simplification": "easy",
+    "skillnet_index": 70,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000071",
+    "task": "task-2a-test-conductivity",
+    "task_family": "task-2a-test-conductivity",
+    "variation_idx": 680,
+    "simplification": "easy",
+    "skillnet_index": 71,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000072",
+    "task": "task-2a-test-conductivity",
+    "task_family": "task-2a-test-conductivity",
+    "variation_idx": 681,
+    "simplification": "easy",
+    "skillnet_index": 72,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000073",
+    "task": "task-2a-test-conductivity",
+    "task_family": "task-2a-test-conductivity",
+    "variation_idx": 682,
+    "simplification": "easy",
+    "skillnet_index": 73,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000074",
+    "task": "task-2a-test-conductivity",
+    "task_family": "task-2a-test-conductivity",
+    "variation_idx": 683,
+    "simplification": "easy",
+    "skillnet_index": 74,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000075",
+    "task": "task-2a-test-conductivity",
+    "task_family": "task-2a-test-conductivity",
+    "variation_idx": 684,
+    "simplification": "easy",
+    "skillnet_index": 75,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000076",
+    "task": "task-2a-test-conductivity-of-unknown-substances",
+    "task_family": "task-2a-test-conductivity-of-unknown-substances",
+    "variation_idx": 450,
+    "simplification": "easy",
+    "skillnet_index": 76,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000077",
+    "task": "task-2a-test-conductivity-of-unknown-substances",
+    "task_family": "task-2a-test-conductivity-of-unknown-substances",
+    "variation_idx": 451,
+    "simplification": "easy",
+    "skillnet_index": 77,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000078",
+    "task": "task-2a-test-conductivity-of-unknown-substances",
+    "task_family": "task-2a-test-conductivity-of-unknown-substances",
+    "variation_idx": 452,
+    "simplification": "easy",
+    "skillnet_index": 78,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000079",
+    "task": "task-2a-test-conductivity-of-unknown-substances",
+    "task_family": "task-2a-test-conductivity-of-unknown-substances",
+    "variation_idx": 453,
+    "simplification": "easy",
+    "skillnet_index": 79,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000080",
+    "task": "task-2a-test-conductivity-of-unknown-substances",
+    "task_family": "task-2a-test-conductivity-of-unknown-substances",
+    "variation_idx": 454,
+    "simplification": "easy",
+    "skillnet_index": 80,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000081",
+    "task": "task-2a-test-conductivity-of-unknown-substances",
+    "task_family": "task-2a-test-conductivity-of-unknown-substances",
+    "variation_idx": 455,
+    "simplification": "easy",
+    "skillnet_index": 81,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000082",
+    "task": "task-2a-test-conductivity-of-unknown-substances",
+    "task_family": "task-2a-test-conductivity-of-unknown-substances",
+    "variation_idx": 456,
+    "simplification": "easy",
+    "skillnet_index": 82,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000083",
+    "task": "task-2a-test-conductivity-of-unknown-substances",
+    "task_family": "task-2a-test-conductivity-of-unknown-substances",
+    "variation_idx": 457,
+    "simplification": "easy",
+    "skillnet_index": 83,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000084",
+    "task": "task-2a-test-conductivity-of-unknown-substances",
+    "task_family": "task-2a-test-conductivity-of-unknown-substances",
+    "variation_idx": 458,
+    "simplification": "easy",
+    "skillnet_index": 84,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000085",
+    "task": "task-2a-test-conductivity-of-unknown-substances",
+    "task_family": "task-2a-test-conductivity-of-unknown-substances",
+    "variation_idx": 459,
+    "simplification": "easy",
+    "skillnet_index": 85,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000086",
+    "task": "task-3-find-animal",
+    "task_family": "task-3-find-animal",
+    "variation_idx": 225,
+    "simplification": "easy",
+    "skillnet_index": 86,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000087",
+    "task": "task-3-find-animal",
+    "task_family": "task-3-find-animal",
+    "variation_idx": 226,
+    "simplification": "easy",
+    "skillnet_index": 87,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000088",
+    "task": "task-3-find-animal",
+    "task_family": "task-3-find-animal",
+    "variation_idx": 227,
+    "simplification": "easy",
+    "skillnet_index": 88,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000089",
+    "task": "task-3-find-animal",
+    "task_family": "task-3-find-animal",
+    "variation_idx": 228,
+    "simplification": "easy",
+    "skillnet_index": 89,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000090",
+    "task": "task-3-find-animal",
+    "task_family": "task-3-find-animal",
+    "variation_idx": 229,
+    "simplification": "easy",
+    "skillnet_index": 90,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000091",
+    "task": "task-3-find-animal",
+    "task_family": "task-3-find-animal",
+    "variation_idx": 230,
+    "simplification": "easy",
+    "skillnet_index": 91,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000092",
+    "task": "task-3-find-animal",
+    "task_family": "task-3-find-animal",
+    "variation_idx": 231,
+    "simplification": "easy",
+    "skillnet_index": 92,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000093",
+    "task": "task-3-find-animal",
+    "task_family": "task-3-find-animal",
+    "variation_idx": 232,
+    "simplification": "easy",
+    "skillnet_index": 93,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000094",
+    "task": "task-3-find-animal",
+    "task_family": "task-3-find-animal",
+    "variation_idx": 233,
+    "simplification": "easy",
+    "skillnet_index": 94,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000095",
+    "task": "task-3-find-animal",
+    "task_family": "task-3-find-animal",
+    "variation_idx": 234,
+    "simplification": "easy",
+    "skillnet_index": 95,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000096",
+    "task": "task-3-find-living-thing",
+    "task_family": "task-3-find-living-thing",
+    "variation_idx": 225,
+    "simplification": "easy",
+    "skillnet_index": 96,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000097",
+    "task": "task-3-find-living-thing",
+    "task_family": "task-3-find-living-thing",
+    "variation_idx": 226,
+    "simplification": "easy",
+    "skillnet_index": 97,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000098",
+    "task": "task-3-find-living-thing",
+    "task_family": "task-3-find-living-thing",
+    "variation_idx": 227,
+    "simplification": "easy",
+    "skillnet_index": 98,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000099",
+    "task": "task-3-find-living-thing",
+    "task_family": "task-3-find-living-thing",
+    "variation_idx": 228,
+    "simplification": "easy",
+    "skillnet_index": 99,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000100",
+    "task": "task-3-find-living-thing",
+    "task_family": "task-3-find-living-thing",
+    "variation_idx": 229,
+    "simplification": "easy",
+    "skillnet_index": 100,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000101",
+    "task": "task-3-find-living-thing",
+    "task_family": "task-3-find-living-thing",
+    "variation_idx": 230,
+    "simplification": "easy",
+    "skillnet_index": 101,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000102",
+    "task": "task-3-find-living-thing",
+    "task_family": "task-3-find-living-thing",
+    "variation_idx": 231,
+    "simplification": "easy",
+    "skillnet_index": 102,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000103",
+    "task": "task-3-find-living-thing",
+    "task_family": "task-3-find-living-thing",
+    "variation_idx": 232,
+    "simplification": "easy",
+    "skillnet_index": 103,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000104",
+    "task": "task-3-find-living-thing",
+    "task_family": "task-3-find-living-thing",
+    "variation_idx": 233,
+    "simplification": "easy",
+    "skillnet_index": 104,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000105",
+    "task": "task-3-find-living-thing",
+    "task_family": "task-3-find-living-thing",
+    "variation_idx": 234,
+    "simplification": "easy",
+    "skillnet_index": 105,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000106",
+    "task": "task-3-find-non-living-thing",
+    "task_family": "task-3-find-non-living-thing",
+    "variation_idx": 225,
+    "simplification": "easy",
+    "skillnet_index": 106,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000107",
+    "task": "task-3-find-non-living-thing",
+    "task_family": "task-3-find-non-living-thing",
+    "variation_idx": 226,
+    "simplification": "easy",
+    "skillnet_index": 107,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000108",
+    "task": "task-3-find-non-living-thing",
+    "task_family": "task-3-find-non-living-thing",
+    "variation_idx": 227,
+    "simplification": "easy",
+    "skillnet_index": 108,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000109",
+    "task": "task-3-find-non-living-thing",
+    "task_family": "task-3-find-non-living-thing",
+    "variation_idx": 228,
+    "simplification": "easy",
+    "skillnet_index": 109,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000110",
+    "task": "task-3-find-non-living-thing",
+    "task_family": "task-3-find-non-living-thing",
+    "variation_idx": 229,
+    "simplification": "easy",
+    "skillnet_index": 110,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000111",
+    "task": "task-3-find-non-living-thing",
+    "task_family": "task-3-find-non-living-thing",
+    "variation_idx": 230,
+    "simplification": "easy",
+    "skillnet_index": 111,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000112",
+    "task": "task-3-find-non-living-thing",
+    "task_family": "task-3-find-non-living-thing",
+    "variation_idx": 231,
+    "simplification": "easy",
+    "skillnet_index": 112,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000113",
+    "task": "task-3-find-non-living-thing",
+    "task_family": "task-3-find-non-living-thing",
+    "variation_idx": 232,
+    "simplification": "easy",
+    "skillnet_index": 113,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000114",
+    "task": "task-3-find-non-living-thing",
+    "task_family": "task-3-find-non-living-thing",
+    "variation_idx": 233,
+    "simplification": "easy",
+    "skillnet_index": 114,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000115",
+    "task": "task-3-find-non-living-thing",
+    "task_family": "task-3-find-non-living-thing",
+    "variation_idx": 234,
+    "simplification": "easy",
+    "skillnet_index": 115,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000116",
+    "task": "task-3-find-plant",
+    "task_family": "task-3-find-plant",
+    "variation_idx": 225,
+    "simplification": "easy",
+    "skillnet_index": 116,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000117",
+    "task": "task-3-find-plant",
+    "task_family": "task-3-find-plant",
+    "variation_idx": 226,
+    "simplification": "easy",
+    "skillnet_index": 117,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000118",
+    "task": "task-3-find-plant",
+    "task_family": "task-3-find-plant",
+    "variation_idx": 227,
+    "simplification": "easy",
+    "skillnet_index": 118,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000119",
+    "task": "task-3-find-plant",
+    "task_family": "task-3-find-plant",
+    "variation_idx": 228,
+    "simplification": "easy",
+    "skillnet_index": 119,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000120",
+    "task": "task-3-find-plant",
+    "task_family": "task-3-find-plant",
+    "variation_idx": 229,
+    "simplification": "easy",
+    "skillnet_index": 120,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000121",
+    "task": "task-3-find-plant",
+    "task_family": "task-3-find-plant",
+    "variation_idx": 230,
+    "simplification": "easy",
+    "skillnet_index": 121,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000122",
+    "task": "task-3-find-plant",
+    "task_family": "task-3-find-plant",
+    "variation_idx": 231,
+    "simplification": "easy",
+    "skillnet_index": 122,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000123",
+    "task": "task-3-find-plant",
+    "task_family": "task-3-find-plant",
+    "variation_idx": 232,
+    "simplification": "easy",
+    "skillnet_index": 123,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000124",
+    "task": "task-3-find-plant",
+    "task_family": "task-3-find-plant",
+    "variation_idx": 233,
+    "simplification": "easy",
+    "skillnet_index": 124,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000125",
+    "task": "task-3-find-plant",
+    "task_family": "task-3-find-plant",
+    "variation_idx": 234,
+    "simplification": "easy",
+    "skillnet_index": 125,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000126",
+    "task": "task-4-grow-fruit",
+    "task_family": "task-4-grow-fruit",
+    "variation_idx": 93,
+    "simplification": "easy",
+    "skillnet_index": 126,
+    "split": "test",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_test_000127",
+    "task": "task-4-grow-fruit",
+    "task_family": "task-4-grow-fruit",
+    "variation_idx": 94,
+    "simplification": "easy",
+    "skillnet_index": 127,
+    "split": "test",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_test_000128",
+    "task": "task-4-grow-fruit",
+    "task_family": "task-4-grow-fruit",
+    "variation_idx": 95,
+    "simplification": "easy",
+    "skillnet_index": 128,
+    "split": "test",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_test_000129",
+    "task": "task-4-grow-fruit",
+    "task_family": "task-4-grow-fruit",
+    "variation_idx": 96,
+    "simplification": "easy",
+    "skillnet_index": 129,
+    "split": "test",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_test_000130",
+    "task": "task-4-grow-fruit",
+    "task_family": "task-4-grow-fruit",
+    "variation_idx": 97,
+    "simplification": "easy",
+    "skillnet_index": 130,
+    "split": "test",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_test_000131",
+    "task": "task-4-grow-fruit",
+    "task_family": "task-4-grow-fruit",
+    "variation_idx": 98,
+    "simplification": "easy",
+    "skillnet_index": 131,
+    "split": "test",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_test_000132",
+    "task": "task-4-grow-fruit",
+    "task_family": "task-4-grow-fruit",
+    "variation_idx": 99,
+    "simplification": "easy",
+    "skillnet_index": 132,
+    "split": "test",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_test_000133",
+    "task": "task-4-grow-fruit",
+    "task_family": "task-4-grow-fruit",
+    "variation_idx": 100,
+    "simplification": "easy",
+    "skillnet_index": 133,
+    "split": "test",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_test_000134",
+    "task": "task-4-grow-fruit",
+    "task_family": "task-4-grow-fruit",
+    "variation_idx": 101,
+    "simplification": "easy",
+    "skillnet_index": 134,
+    "split": "test",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_test_000135",
+    "task": "task-4-grow-fruit",
+    "task_family": "task-4-grow-fruit",
+    "variation_idx": 102,
+    "simplification": "easy",
+    "skillnet_index": 135,
+    "split": "test",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_test_000136",
+    "task": "task-4-grow-plant",
+    "task_family": "task-4-grow-plant",
+    "variation_idx": 93,
+    "simplification": "easy",
+    "skillnet_index": 136,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000137",
+    "task": "task-4-grow-plant",
+    "task_family": "task-4-grow-plant",
+    "variation_idx": 94,
+    "simplification": "easy",
+    "skillnet_index": 137,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000138",
+    "task": "task-4-grow-plant",
+    "task_family": "task-4-grow-plant",
+    "variation_idx": 95,
+    "simplification": "easy",
+    "skillnet_index": 138,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000139",
+    "task": "task-4-grow-plant",
+    "task_family": "task-4-grow-plant",
+    "variation_idx": 96,
+    "simplification": "easy",
+    "skillnet_index": 139,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000140",
+    "task": "task-4-grow-plant",
+    "task_family": "task-4-grow-plant",
+    "variation_idx": 97,
+    "simplification": "easy",
+    "skillnet_index": 140,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000141",
+    "task": "task-4-grow-plant",
+    "task_family": "task-4-grow-plant",
+    "variation_idx": 98,
+    "simplification": "easy",
+    "skillnet_index": 141,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000142",
+    "task": "task-4-grow-plant",
+    "task_family": "task-4-grow-plant",
+    "variation_idx": 99,
+    "simplification": "easy",
+    "skillnet_index": 142,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000143",
+    "task": "task-4-grow-plant",
+    "task_family": "task-4-grow-plant",
+    "variation_idx": 100,
+    "simplification": "easy",
+    "skillnet_index": 143,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000144",
+    "task": "task-4-grow-plant",
+    "task_family": "task-4-grow-plant",
+    "variation_idx": 101,
+    "simplification": "easy",
+    "skillnet_index": 144,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000145",
+    "task": "task-4-grow-plant",
+    "task_family": "task-4-grow-plant",
+    "variation_idx": 102,
+    "simplification": "easy",
+    "skillnet_index": 145,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000146",
+    "task": "task-5-chemistry-mix",
+    "task_family": "task-5-chemistry-mix",
+    "variation_idx": 24,
+    "simplification": "easy",
+    "skillnet_index": 146,
+    "split": "test",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_test_000147",
+    "task": "task-5-chemistry-mix",
+    "task_family": "task-5-chemistry-mix",
+    "variation_idx": 25,
+    "simplification": "easy",
+    "skillnet_index": 147,
+    "split": "test",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_test_000148",
+    "task": "task-5-chemistry-mix",
+    "task_family": "task-5-chemistry-mix",
+    "variation_idx": 26,
+    "simplification": "easy",
+    "skillnet_index": 148,
+    "split": "test",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_test_000149",
+    "task": "task-5-chemistry-mix",
+    "task_family": "task-5-chemistry-mix",
+    "variation_idx": 27,
+    "simplification": "easy",
+    "skillnet_index": 149,
+    "split": "test",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_test_000150",
+    "task": "task-5-chemistry-mix",
+    "task_family": "task-5-chemistry-mix",
+    "variation_idx": 28,
+    "simplification": "easy",
+    "skillnet_index": 150,
+    "split": "test",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_test_000151",
+    "task": "task-5-chemistry-mix",
+    "task_family": "task-5-chemistry-mix",
+    "variation_idx": 29,
+    "simplification": "easy",
+    "skillnet_index": 151,
+    "split": "test",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_test_000152",
+    "task": "task-5-chemistry-mix",
+    "task_family": "task-5-chemistry-mix",
+    "variation_idx": 30,
+    "simplification": "easy",
+    "skillnet_index": 152,
+    "split": "test",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_test_000153",
+    "task": "task-5-chemistry-mix",
+    "task_family": "task-5-chemistry-mix",
+    "variation_idx": 31,
+    "simplification": "easy",
+    "skillnet_index": 153,
+    "split": "test",
+    "recommended_max_steps": 60
+  },
+  {
+    "task_id": "scienceworld_test_000154",
+    "task": "task-5-chemistry-mix-paint-(secondary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(secondary-color)",
+    "variation_idx": 27,
+    "simplification": "easy",
+    "skillnet_index": 154,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000155",
+    "task": "task-5-chemistry-mix-paint-(secondary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(secondary-color)",
+    "variation_idx": 28,
+    "simplification": "easy",
+    "skillnet_index": 155,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000156",
+    "task": "task-5-chemistry-mix-paint-(secondary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(secondary-color)",
+    "variation_idx": 29,
+    "simplification": "easy",
+    "skillnet_index": 156,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000157",
+    "task": "task-5-chemistry-mix-paint-(secondary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(secondary-color)",
+    "variation_idx": 30,
+    "simplification": "easy",
+    "skillnet_index": 157,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000158",
+    "task": "task-5-chemistry-mix-paint-(secondary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(secondary-color)",
+    "variation_idx": 31,
+    "simplification": "easy",
+    "skillnet_index": 158,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000159",
+    "task": "task-5-chemistry-mix-paint-(secondary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(secondary-color)",
+    "variation_idx": 32,
+    "simplification": "easy",
+    "skillnet_index": 159,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000160",
+    "task": "task-5-chemistry-mix-paint-(secondary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(secondary-color)",
+    "variation_idx": 33,
+    "simplification": "easy",
+    "skillnet_index": 160,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000161",
+    "task": "task-5-chemistry-mix-paint-(secondary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(secondary-color)",
+    "variation_idx": 34,
+    "simplification": "easy",
+    "skillnet_index": 161,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000162",
+    "task": "task-5-chemistry-mix-paint-(secondary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(secondary-color)",
+    "variation_idx": 35,
+    "simplification": "easy",
+    "skillnet_index": 162,
+    "split": "test",
+    "recommended_max_steps": 15
+  },
+  {
+    "task_id": "scienceworld_test_000163",
+    "task": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "variation_idx": 27,
+    "simplification": "easy",
+    "skillnet_index": 163,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000164",
+    "task": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "variation_idx": 28,
+    "simplification": "easy",
+    "skillnet_index": 164,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000165",
+    "task": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "variation_idx": 29,
+    "simplification": "easy",
+    "skillnet_index": 165,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000166",
+    "task": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "variation_idx": 30,
+    "simplification": "easy",
+    "skillnet_index": 166,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000167",
+    "task": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "variation_idx": 31,
+    "simplification": "easy",
+    "skillnet_index": 167,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000168",
+    "task": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "variation_idx": 32,
+    "simplification": "easy",
+    "skillnet_index": 168,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000169",
+    "task": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "variation_idx": 33,
+    "simplification": "easy",
+    "skillnet_index": 169,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000170",
+    "task": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "variation_idx": 34,
+    "simplification": "easy",
+    "skillnet_index": 170,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000171",
+    "task": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "task_family": "task-5-chemistry-mix-paint-(tertiary-color)",
+    "variation_idx": 35,
+    "simplification": "easy",
+    "skillnet_index": 171,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000172",
+    "task": "task-6-lifespan-(longest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived)",
+    "variation_idx": 93,
+    "simplification": "easy",
+    "skillnet_index": 172,
+    "split": "test",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_test_000173",
+    "task": "task-6-lifespan-(longest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived)",
+    "variation_idx": 94,
+    "simplification": "easy",
+    "skillnet_index": 173,
+    "split": "test",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_test_000174",
+    "task": "task-6-lifespan-(longest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived)",
+    "variation_idx": 95,
+    "simplification": "easy",
+    "skillnet_index": 174,
+    "split": "test",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_test_000175",
+    "task": "task-6-lifespan-(longest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived)",
+    "variation_idx": 96,
+    "simplification": "easy",
+    "skillnet_index": 175,
+    "split": "test",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_test_000176",
+    "task": "task-6-lifespan-(longest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived)",
+    "variation_idx": 97,
+    "simplification": "easy",
+    "skillnet_index": 176,
+    "split": "test",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_test_000177",
+    "task": "task-6-lifespan-(longest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived)",
+    "variation_idx": 98,
+    "simplification": "easy",
+    "skillnet_index": 177,
+    "split": "test",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_test_000178",
+    "task": "task-6-lifespan-(longest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived)",
+    "variation_idx": 99,
+    "simplification": "easy",
+    "skillnet_index": 178,
+    "split": "test",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_test_000179",
+    "task": "task-6-lifespan-(longest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived)",
+    "variation_idx": 100,
+    "simplification": "easy",
+    "skillnet_index": 179,
+    "split": "test",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_test_000180",
+    "task": "task-6-lifespan-(longest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived)",
+    "variation_idx": 101,
+    "simplification": "easy",
+    "skillnet_index": 180,
+    "split": "test",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_test_000181",
+    "task": "task-6-lifespan-(longest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived)",
+    "variation_idx": 102,
+    "simplification": "easy",
+    "skillnet_index": 181,
+    "split": "test",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_test_000182",
+    "task": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "variation_idx": 93,
+    "simplification": "easy",
+    "skillnet_index": 182,
+    "split": "test",
+    "recommended_max_steps": 12
+  },
+  {
+    "task_id": "scienceworld_test_000183",
+    "task": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "variation_idx": 94,
+    "simplification": "easy",
+    "skillnet_index": 183,
+    "split": "test",
+    "recommended_max_steps": 12
+  },
+  {
+    "task_id": "scienceworld_test_000184",
+    "task": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "variation_idx": 95,
+    "simplification": "easy",
+    "skillnet_index": 184,
+    "split": "test",
+    "recommended_max_steps": 12
+  },
+  {
+    "task_id": "scienceworld_test_000185",
+    "task": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "variation_idx": 96,
+    "simplification": "easy",
+    "skillnet_index": 185,
+    "split": "test",
+    "recommended_max_steps": 12
+  },
+  {
+    "task_id": "scienceworld_test_000186",
+    "task": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "variation_idx": 97,
+    "simplification": "easy",
+    "skillnet_index": 186,
+    "split": "test",
+    "recommended_max_steps": 12
+  },
+  {
+    "task_id": "scienceworld_test_000187",
+    "task": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "variation_idx": 98,
+    "simplification": "easy",
+    "skillnet_index": 187,
+    "split": "test",
+    "recommended_max_steps": 12
+  },
+  {
+    "task_id": "scienceworld_test_000188",
+    "task": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "variation_idx": 99,
+    "simplification": "easy",
+    "skillnet_index": 188,
+    "split": "test",
+    "recommended_max_steps": 12
+  },
+  {
+    "task_id": "scienceworld_test_000189",
+    "task": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "variation_idx": 100,
+    "simplification": "easy",
+    "skillnet_index": 189,
+    "split": "test",
+    "recommended_max_steps": 12
+  },
+  {
+    "task_id": "scienceworld_test_000190",
+    "task": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "variation_idx": 101,
+    "simplification": "easy",
+    "skillnet_index": 190,
+    "split": "test",
+    "recommended_max_steps": 12
+  },
+  {
+    "task_id": "scienceworld_test_000191",
+    "task": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "task_family": "task-6-lifespan-(longest-lived-then-shortest-lived)",
+    "variation_idx": 102,
+    "simplification": "easy",
+    "skillnet_index": 191,
+    "split": "test",
+    "recommended_max_steps": 12
+  },
+  {
+    "task_id": "scienceworld_test_000192",
+    "task": "task-6-lifespan-(shortest-lived)",
+    "task_family": "task-6-lifespan-(shortest-lived)",
+    "variation_idx": 93,
+    "simplification": "easy",
+    "skillnet_index": 192,
+    "split": "test",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_test_000193",
+    "task": "task-6-lifespan-(shortest-lived)",
+    "task_family": "task-6-lifespan-(shortest-lived)",
+    "variation_idx": 94,
+    "simplification": "easy",
+    "skillnet_index": 193,
+    "split": "test",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_test_000194",
+    "task": "task-6-lifespan-(shortest-lived)",
+    "task_family": "task-6-lifespan-(shortest-lived)",
+    "variation_idx": 95,
+    "simplification": "easy",
+    "skillnet_index": 194,
+    "split": "test",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_test_000195",
+    "task": "task-6-lifespan-(shortest-lived)",
+    "task_family": "task-6-lifespan-(shortest-lived)",
+    "variation_idx": 96,
+    "simplification": "easy",
+    "skillnet_index": 195,
+    "split": "test",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_test_000196",
+    "task": "task-6-lifespan-(shortest-lived)",
+    "task_family": "task-6-lifespan-(shortest-lived)",
+    "variation_idx": 97,
+    "simplification": "easy",
+    "skillnet_index": 196,
+    "split": "test",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_test_000197",
+    "task": "task-6-lifespan-(shortest-lived)",
+    "task_family": "task-6-lifespan-(shortest-lived)",
+    "variation_idx": 98,
+    "simplification": "easy",
+    "skillnet_index": 197,
+    "split": "test",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_test_000198",
+    "task": "task-6-lifespan-(shortest-lived)",
+    "task_family": "task-6-lifespan-(shortest-lived)",
+    "variation_idx": 99,
+    "simplification": "easy",
+    "skillnet_index": 198,
+    "split": "test",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_test_000199",
+    "task": "task-6-lifespan-(shortest-lived)",
+    "task_family": "task-6-lifespan-(shortest-lived)",
+    "variation_idx": 100,
+    "simplification": "easy",
+    "skillnet_index": 199,
+    "split": "test",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_test_000200",
+    "task": "task-6-lifespan-(shortest-lived)",
+    "task_family": "task-6-lifespan-(shortest-lived)",
+    "variation_idx": 101,
+    "simplification": "easy",
+    "skillnet_index": 200,
+    "split": "test",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_test_000201",
+    "task": "task-6-lifespan-(shortest-lived)",
+    "task_family": "task-6-lifespan-(shortest-lived)",
+    "variation_idx": 102,
+    "simplification": "easy",
+    "skillnet_index": 201,
+    "split": "test",
+    "recommended_max_steps": 10
+  },
+  {
+    "task_id": "scienceworld_test_000202",
+    "task": "task-7-identify-life-stages-1",
+    "task_family": "task-7-identify-life-stages-1",
+    "variation_idx": 9,
+    "simplification": "easy",
+    "skillnet_index": 202,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000203",
+    "task": "task-7-identify-life-stages-1",
+    "task_family": "task-7-identify-life-stages-1",
+    "variation_idx": 10,
+    "simplification": "easy",
+    "skillnet_index": 203,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000204",
+    "task": "task-7-identify-life-stages-1",
+    "task_family": "task-7-identify-life-stages-1",
+    "variation_idx": 11,
+    "simplification": "easy",
+    "skillnet_index": 204,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000205",
+    "task": "task-7-identify-life-stages-1",
+    "task_family": "task-7-identify-life-stages-1",
+    "variation_idx": 12,
+    "simplification": "easy",
+    "skillnet_index": 205,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000206",
+    "task": "task-7-identify-life-stages-1",
+    "task_family": "task-7-identify-life-stages-1",
+    "variation_idx": 13,
+    "simplification": "easy",
+    "skillnet_index": 206,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000207",
+    "task": "task-7-identify-life-stages-2",
+    "task_family": "task-7-identify-life-stages-2",
+    "variation_idx": 6,
+    "simplification": "easy",
+    "skillnet_index": 207,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000208",
+    "task": "task-7-identify-life-stages-2",
+    "task_family": "task-7-identify-life-stages-2",
+    "variation_idx": 7,
+    "simplification": "easy",
+    "skillnet_index": 208,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000209",
+    "task": "task-7-identify-life-stages-2",
+    "task_family": "task-7-identify-life-stages-2",
+    "variation_idx": 8,
+    "simplification": "easy",
+    "skillnet_index": 209,
+    "split": "test",
+    "recommended_max_steps": 30
+  },
+  {
+    "task_id": "scienceworld_test_000210",
+    "task": "task-7-identify-life-stages-2",
+    "task_family": "task-7-identify-life-stages-2",
+    "variation_idx": 9,
+    "simplification": "easy",
+    "skillnet_index": 210,
+    "split": "test",
+    "recommended_max_steps": 30
+  }
+]
