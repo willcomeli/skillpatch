@@ -8,7 +8,8 @@ from pathlib import Path
 import tempfile
 from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from concurrent.futures import Future
+from unittest.mock import MagicMock, patch
 
 from scripts.skillsbench import experiment as exp
 
@@ -53,6 +54,13 @@ class SkillsBenchExperimentTests(unittest.TestCase):
         return exp.replace(exp.request_for(self.tasks / name, self.cfg, self.native),
                            skills_dir=self.tasks / name / 'environment/skills')
 
+    def test_v1_1_environment_build_budget_is_preserved(self):
+        path = self.tasks / 'one/task.md'
+        path.write_text('---\nagent:\n  timeout_sec: 900\nverifier:\n  timeout_sec: 900\nenvironment:\n  build_timeout_sec: 600\nsandbox:\n  build_timeout_sec: 1800\n---\nSolve it.\n')
+        request = self.request()
+        self.assertEqual(request.sandbox_setup_timeout, 600)
+        self.assertEqual(request.agent_idle_timeout, 0)
+
     def test_four_processes_continue_after_one_task_fails(self):
         with multiprocessing.Manager() as manager:
             activity = manager.list()
@@ -67,6 +75,23 @@ class SkillsBenchExperimentTests(unittest.TestCase):
             self.assertGreaterEqual(counts['peak'], 2)
             self.assertLessEqual(counts['peak'], 4)
             self.assertTrue(all(pid != os.getpid() for _, pid in activity))
+
+    def test_stopping_batch_does_not_queue_remaining_dataset(self):
+        pool = MagicMock()
+        pool.__enter__.return_value = pool
+
+        def submit(worker, *arguments):
+            future = Future()
+            future.set_result({'status': 'completed'})
+            return future
+
+        pool.submit.side_effect = submit
+        jobs = [(str(i), (str(i),)) for i in range(87)]
+        with patch.object(exp, 'ProcessPoolExecutor', return_value=pool):
+            results = exp._batch_results(None, jobs, 4, ())
+            next(results)
+            results.close()
+        self.assertEqual(pool.submit.call_count, 4)
 
     def test_empty_reference_does_not_abort_other_baselines(self):
         def execute(request, folder, environment, **kwargs):
@@ -192,6 +217,11 @@ class SkillsBenchExperimentTests(unittest.TestCase):
 
         def train(trainer):
             adapter = trainer.adapter
+            loader = adapter.get_dataloader()
+            self.assertEqual(loader.get_train_size(), 1)
+            for split in ('train', 'val'):
+                batch = loader.build_train_batch(1, 0) if split == 'train' else loader.build_eval_batch(1, 'valid_seen', 0)
+                self.assertEqual([row['id'] for row in adapter.build_env_from_batch(batch)], ['one'])
             initial = (request.skills_dir / 'alpha/SKILL.md').read_text()
             for phase, envs, text in (
                     ('selection', adapter.build_eval_env(1, 'valid_seen', 0), initial),
@@ -307,13 +337,15 @@ class SkillsBenchExperimentTests(unittest.TestCase):
 
         patches = [{'source_type': 'failure', 'batch_size': 1, 'patch': {
             'reasoning': 'Missing precondition', 'edits': [{'op': 'append', 'content': 'Check inventory'}]}}]
-        with patch('method_input_adapters.skillopt.adapter.SharedExecutionAdapter.reflect', return_value=patches), \
+        with patch('method_input_adapters.skillopt.adapter.SharedExecutionAdapter.reflect', return_value=patches) as reflect, \
              patch('method_input_adapters.skillopt.results.export_results', side_effect=export), \
              patch.object(exp, 'execute', side_effect=execute):
             output = self.root / 'optimization'
             summary = exp.optimize_skillopt_one(baseline, request, 'alpha', output,
                 {'METHOD_API_KEY': 'test-key'}, self.optimizer, exp.ROOT / 'configs/skillsbench/skillopt.yaml')
         self.assertEqual(summary['best_selection_hard'], 1)
+        self.assertEqual(reflect.call_count, 1)
+        self.assertEqual([row['id'] for row in reflect.call_args.args[0]], ['one'])
         self.assertIn('Check inventory', (output / 'best_skill.md').read_text())
         self.assertEqual(len(live_sources), 1)
 

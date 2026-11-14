@@ -2,8 +2,10 @@
 
 from contextlib import redirect_stdout
 from dataclasses import replace
+from http.client import IncompleteRead
 import io
 import json
+from ssl import SSLError, SSLCertVerificationError
 from pathlib import Path
 import tempfile
 import unittest
@@ -42,6 +44,14 @@ class NativeModelRetryTests(unittest.TestCase):
 
     def client(self, retries):
         return ChatClient(replace(self.config, max_retries=retries), self.environment)
+
+    def test_disabled_token_limit_is_omitted_from_request(self):
+        client = ChatClient(replace(self.config, max_tokens=None), self.environment)
+        with patch('excutor.runner_common.launcher.urlopen', return_value=self.response()) as request:
+            self.assertEqual(client.chat(self.messages), 'print(1)')
+        payload = json.loads(request.call_args.args[0].data)
+        self.assertNotIn('max_tokens', payload)
+        self.assertNotIn('max_completion_tokens', payload)
 
     @staticmethod
     def streaming_response(done=True):
@@ -90,7 +100,9 @@ class NativeModelRetryTests(unittest.TestCase):
         self.assertTrue(json.loads(request.call_args.args[0].data)['stream'])
 
     def test_transient_errors_recover_with_identical_request(self):
-        errors = [URLError('TLS EOF'), TimeoutError('timeout'), ConnectionError('reset')]
+        errors = [URLError('TLS EOF'), TimeoutError('timeout'), ConnectionError('reset'),
+                  IncompleteRead(b'', 100), SSLError('[SSL] record layer failure'),
+                  SSLError('[SSL: DECRYPTION_FAILED_OR_BAD_RECORD_MAC] bad record mac')]
         errors.extend(self.http_error(status) for status in (408, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524, 525, 526, 527, 530))
         for error in errors:
             with self.subTest(error=type(error).__name__, status=getattr(error, 'code', None)):
@@ -182,11 +194,66 @@ class NativeModelRetryTests(unittest.TestCase):
         sleep.assert_not_called()
         self.assertEqual((client.request_attempts, client.retry_count), (1, 0))
 
+    def test_unlimited_requests_preserve_scienceworld_environment_steps_and_history(self):
+        from excutor.scienceworld_runners.agent import ScienceWorldActionAgent
+        from excutor.scienceworld_runners.runner import ScienceWorldRunner
+        client = self.client(None)
+        env = Mock()
+        env.reset.return_value = ('Initial observation', {'score': 0}, 'Fixture task')
+        env.step.side_effect = [
+            ('After first action', 0.5, False, {'_score_available': True}),
+            ('Task completed', 1.0, True, {'_score_available': True})]
+        bank = Mock()
+        bank.retrieve.return_value = {}
+        bank.format_for_prompt.return_value = ''
+        bank.retrieved_skill_ids.return_value = []
+        with patch('excutor.scienceworld_runners.runner.RemoteScienceWorldEnv', return_value=env):
+            runner = ScienceWorldRunner(ScienceWorldActionAgent(client),
+                                       remote_environment_url='http://fixture-env')
+        errors = [self.http_error(502) for _ in range(4)] + [
+            SSLError('[SSL] record layer failure') for _ in range(4)]
+        responses = [self.response('<action>look around</action>'), *errors,
+                     self.response('<action>activate stove</action>')]
+        with patch('excutor.runner_common.launcher.urlopen', side_effect=responses) as request, \
+                patch('excutor.runner_common.launcher.time.sleep'):
+            result = runner.run_task({'task_id': 'boil--0', 'task': 'boil', 'variation_idx': 0}, bank)
+        self.assertTrue(result['success'])
+        self.assertEqual(result['steps'], 2)
+        env.reset.assert_called_once()
+        self.assertEqual(env.step.call_args_list, [call('look around'), call('activate stove')])
+        self.assertEqual((client.request_attempts, client.retry_count), (10, 8))
+        bodies = [entry.args[0].data for entry in request.call_args_list]
+        self.assertTrue(all(body == bodies[1] for body in bodies[1:]))
+        self.assertIn('After first action', json.loads(bodies[1])['messages'][-1]['content'])
+
+    def test_certificate_verification_error_is_terminal(self):
+        client = self.client(None)
+        with patch('excutor.runner_common.launcher.urlopen',
+                   side_effect=SSLCertVerificationError('certificate verify failed')) as request, \
+                patch('excutor.runner_common.launcher.time.sleep') as sleep:
+            with self.assertRaises(SSLCertVerificationError):
+                client.chat(self.messages)
+        self.assertEqual(request.call_count, 1)
+        sleep.assert_not_called()
+
+    def test_unlimited_request_retries_can_be_interrupted_and_auth_errors_are_terminal(self):
+        client = self.client(None)
+        errors = [URLError('TLS EOF') for _ in range(8)] + [KeyboardInterrupt()]
+        with patch('excutor.runner_common.launcher.urlopen', side_effect=errors), \
+                patch('excutor.runner_common.launcher.time.sleep'), self.assertRaises(KeyboardInterrupt):
+            client.chat(self.messages)
+        self.assertEqual(client.retry_count, 8)
+        with patch('excutor.runner_common.launcher.urlopen', side_effect=self.http_error(401)) as request, \
+                self.assertRaisesRegex(ValueError, '401'):
+            self.client(None).chat(self.messages)
+        self.assertEqual(request.call_count, 1)
+
     def test_parser_accepts_nonnegative_retry_budget_and_defaults_to_zero(self):
         config = self.root / 'native.toml'
         prefix = ('[task]\nbenchmark="appworld"\npath="tasks.json"\nskill_mode="no-skill"\n'
                   '[agent]\nmodel="fixture-model"\n')
-        for setting, expected in (('', 0), ('max_retries=0\n', 0), ('max_retries=3\n', 3)):
+        for setting, expected in (('', 0), ('max_retries=0\n', 0), ('max_retries=3\n', 3),
+                                  ('max_retries="unlimited"\n', None)):
             with self.subTest(setting=setting):
                 config.write_text(prefix + setting)
                 self.assertEqual(load_native_config(config).max_retries, expected)

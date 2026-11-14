@@ -197,14 +197,15 @@ class DiscoveryContextTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "event count"):
             build_diagnosis_context(self.root)
 
-    def test_partial_and_unknown_trajectories_are_marked(self):
-        for complete, phrase in ((False, "Trajectory is partial"), (None, "completeness is unknown")):
+    def test_completeness_flags_are_not_forwarded_as_metadata_or_limitations(self):
+        for complete in (False, None, True, 'unknown'):
             with self.subTest(complete=complete):
                 self.result["execution"]["trajectory_complete"] = complete
                 self.save_result()
                 data = build_diagnosis_context(self.root)
-                self.assertIs(data.trajectory_complete, complete)
-                self.assertTrue(any(phrase in item for item in data.limitations))
+                self.assertFalse(hasattr(data, 'trajectory_complete'))
+                self.assertFalse(any('Trajectory is partial' in item or 'completeness' in item
+                                     for item in data.limitations))
 
     def test_images_are_omitted_with_limitations_but_sibling_text_is_retained(self):
         self.raw_events[1]["content"] = [
@@ -228,11 +229,7 @@ class DiscoveryContextTests(unittest.TestCase):
         self.assertIn(text, event.text)
         self.assertIn(text, render_diagnosis_context(data))
         self.assertTrue(any("T000002" in item and "image placeholder" in item for item in data.limitations))
-        self.assertIn(
-            "trajectory_complete refers to recorded event coverage, not complete observability of underlying artifacts.",
-            data.limitations,
-        )
-        self.assertTrue(data.trajectory_complete)
+        self.assertFalse(hasattr(data, 'trajectory_complete'))
 
     def test_nontext_skill_assets_are_marked_not_sent(self):
         image = self.skills / "pack/assets/picture.png"

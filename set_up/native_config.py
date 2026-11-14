@@ -25,11 +25,11 @@ class NativeRunConfig:
     base_url_env: str
     base_url: str | None
     temperature: float
-    max_tokens: int
+    max_tokens: int | None
     timeout_sec: int
     runner_options: dict
     output_root: Path
-    max_retries: int = 0
+    max_retries: int | None = 0
 
 
 def load_native_config(path: Path, environment=None) -> NativeRunConfig:
@@ -95,8 +95,10 @@ def load_native_config(path: Path, environment=None) -> NativeRunConfig:
         _string(agent.get('api_key_env', 'OPENAI_API_KEY'), 'agent.api_key_env'),
         _string(agent.get('base_url_env', 'OPENAI_BASE_URL'), 'agent.base_url_env'),
         _string(agent['base_url'], 'agent.base_url') if agent.get('base_url') else None,
-        float(temperature), _integer(agent.get('max_tokens', 4096), 'agent.max_tokens'),
+        float(temperature), (None if agent.get('max_tokens') is False else
+                             _integer(agent.get('max_tokens', 4096), 'agent.max_tokens')),
         _integer(runtime.get('timeout_sec', 300), 'runtime.timeout_sec'), options,
         resolve(output.get('root', '../runs')),
-        _integer(agent.get('max_retries', 0), 'agent.max_retries', minimum=0),
+        (None if agent.get('max_retries') == 'unlimited' else
+         _integer(agent.get('max_retries', 0), 'agent.max_retries', minimum=0)),
     )

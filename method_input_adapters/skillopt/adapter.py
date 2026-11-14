@@ -6,11 +6,13 @@ from skillopt.envs.base import EnvAdapter
 from excutor.executor_adapter.storage import sha256_file, write_json
 from ..execution import select_tasks
 from .results import export_results
+from .dataloader import ManifestDataLoader
 
 
 class SharedExecutionAdapter(EnvAdapter):
     def __init__(self, tasks, bridge, *, frozen_trajectory_manifest=None, initial_skill=None):
         self.tasks, self.bridge = tasks, bridge
+        self.dataloader = ManifestDataLoader(tasks)
         self._first_training_rollout_seen = False
         self._frozen_manifest_path = None
         if frozen_trajectory_manifest is not None:
@@ -99,6 +101,14 @@ class SharedExecutionAdapter(EnvAdapter):
 
     def build_train_env(self, batch_size, seed, **kwargs):
         return select_tasks(self.tasks, 'train', batch_size, seed)
+
+    def get_dataloader(self):
+        return self.dataloader
+
+    def build_env_from_batch(self, batch, **kwargs):
+        # Consume the exact planned items, including the final short batch.
+        # Re-sampling here would lose full-epoch coverage and resume identity.
+        return list(batch.payload)
 
     def build_eval_env(self, env_num, split, seed, **kwargs):
         aliases = {'val': 'val', 'valid_seen': 'val', 'valid_unseen': 'test', 'selection': 'val', 'test': 'test'}

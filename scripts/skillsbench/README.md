@@ -1,5 +1,20 @@
 # SkillsBench 三方法实验
 
+本机本轮实验仅运行 SkillOpt 和 Trace2Skill，暂不运行 SkillPatch：
+
+```bash
+.venvs/methods/bin/python -u -m scripts.skillsbench.experiment \
+  --config configs/skillsbench/local.toml --env-file .env.scienceworld \
+  --methods skillopt trace2skill --concurrency 4 \
+  --output runs/skillsbench/full-4workers-20261114
+```
+
+使用 v1.1 的全部 87 个任务，执行模型为 `deepseek-flash`，方法模型为
+`gpt-6.1-sol`。同一任务轨迹分别用于包内各 Skill 的优化，组包后重跑原任务。
+方法编排使用已存在的 methods Python；BenchFlow 后端由 `local.toml` 指定的
+本机 Python 调用已安装的 BenchFlow 0.6.3，不使用 `benchflow_source`。
+Docker Desktop 的镜像拉取代理与容器安装代理分别配置；修复前的失败归档保留在旧目录。
+
 只新增编排脚本和配置，不修改 `method/`、方法适配器、执行器或 prompt。
 
 默认任务源为 `workspace/dataset/skillsbench/tasks` 中的全部任务。

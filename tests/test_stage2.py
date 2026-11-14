@@ -1,6 +1,7 @@
 """Stage2 generation consumes unified Stage1 archives without benchmark execution."""
 import copy
 import json
+import hashlib
 from pathlib import Path
 import tempfile
 import unittest
@@ -75,6 +76,30 @@ class Stage2Tests(unittest.TestCase):
             self.assertEqual(state['status'],status,state)
             self.assertNotIn('patch_path',state)
             self.assertFalse((self.root/status/'generation/patch.json').exists())
+
+    def test_legacy_completeness_metadata_is_not_forwarded_and_archive_is_preserved(self):
+        path = self.diagnosis / 'input/context.json'
+        raw = json.loads(path.read_text())
+        raw['trajectory_complete'] = None
+        raw['limitations'].append('Trajectory completeness is unknown; missing-step claims require caution.')
+        raw['input_digest'] = 'sha256:' + hashlib.sha256(json.dumps(
+            {k: v for k, v in raw.items() if k != 'input_digest'}, ensure_ascii=False,
+            sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+        write_json(path, raw)
+        state_path = self.diagnosis / 'result.json'
+        state = json.loads(state_path.read_text());state['input_digest'] = raw['input_digest']
+        write_json(state_path, state)
+        before = tree_hashes(self.diagnosis)
+        source = load_source(self.diagnosis, 'I000001')
+        self.assertFalse(hasattr(source.context, 'trajectory_complete'))
+        output = self.root / 'legacy-out'
+        result = run_stage2(self.diagnosis, 'I000001', self.config, output, {},
+                            client=Client([self.patch_payload]))
+        self.assertEqual(result['status'], 'generated', result)
+        material = json.loads((output / 'generation/input/source.json').read_text())
+        self.assertNotIn('trajectory_complete', material)
+        self.assertFalse(any('completeness' in x.lower() for x in material['limitations']))
+        self.assertEqual(tree_hashes(self.diagnosis), before)
 
     def test_bad_target_reference_fails_before_agent(self):
         bad=copy.deepcopy(self.report);bad['improvements'][0]['target']['quote']='not present'

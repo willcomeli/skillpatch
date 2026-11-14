@@ -76,6 +76,43 @@ class ResultAdapterTests(unittest.TestCase):
 class SkillOptIntegrationTests(unittest.TestCase):
     setUp = ResultAdapterTests.setUp
 
+    def test_manifest_epochs_cover_all_tasks_and_resume_exact_batches(self):
+        tasks = [dict(id=f'train-{i}', split='train') for i in range(96)]
+        tasks += [dict(id=f'{split}-{i}', split=split)
+                  for split, count in [('val', 48), ('test', 211)] for i in range(count)]
+        adapter = create_adapter(tasks, None)
+        adapter.setup({})
+        loader = adapter.get_dataloader()
+        self.assertEqual(loader.get_train_size(), 96)
+        orders = []
+        for epoch in range(1, 5):
+            kwargs = dict(epoch=epoch, steps_per_epoch=3, accumulation=1,
+                          batch_size=40, seed=42)
+            batches = loader.plan_train_epoch(**kwargs)
+            self.assertEqual([b.batch_size for b in batches], [40, 40, 16])
+            rows = [row for b in batches for row in adapter.build_env_from_batch(b)]
+            ids = [row['id'] for row in rows]
+            self.assertEqual(len(set(ids)), 96)
+            self.assertEqual(set(ids), {f'train-{i}' for i in range(96)})
+            orders.append(ids)
+            # A new process/adapter at a step checkpoint must plan the same
+            # remaining payloads, not draw a fresh subset using batch.seed.
+            resumed = create_adapter(tasks, None)
+            resumed.setup({})
+            replay = resumed.get_dataloader().plan_train_epoch(**kwargs)
+            self.assertEqual(batches, replay)
+            for original, restored in zip(batches[1:], replay[1:]):
+                self.assertEqual(adapter.build_env_from_batch(original),
+                                 resumed.build_env_from_batch(restored))
+        self.assertNotEqual(orders[0], orders[1])
+        for split, canonical, count in [('selection', 'val', 48),
+                                         ('valid_seen', 'val', 48),
+                                         ('valid_unseen', 'test', 211)]:
+            batch = loader.build_eval_batch(env_num=count, split=split, seed=42)
+            rows = adapter.build_env_from_batch(batch)
+            self.assertEqual(len(rows), count)
+            self.assertTrue(all(row['split'] == canonical for row in rows))
+
     def test_trainer_routes_candidate_and_heldout_validation_to_bridge(self):
         from skillopt.config import load_config, flatten_config
         from skillopt.engine.trainer import ReflACTTrainer
@@ -110,6 +147,49 @@ class SkillOptIntegrationTests(unittest.TestCase):
         self.assertTrue(any(tid == 'train' and 'Check inventory' not in text for tid, text in calls))
         self.assertFalse(any(tid == 'test' for tid, _ in calls))
         self.assertIn('Check inventory', (self.root / 'train/best_skill.md').read_text())
+
+    def test_trainer_executes_each_manifest_task_once_per_epoch(self):
+        import contextlib
+        import io
+        from skillopt.config import load_config, flatten_config
+        from skillopt.engine.trainer import ReflACTTrainer
+        root = Path(__file__).resolve().parents[1]
+        cfg = flatten_config(load_config(str(root / 'method/skillopt/configs/_base_/default.yaml')))
+        skill = self.root / 'initial.md'
+        skill.write_text('')
+        cfg.update(out_root=str(self.root / 'train'), skill_init=str(skill), train_size=96,
+                   num_epochs=4, batch_size=40, accumulation=1, model_backend='openai_compatible',
+                   optimizer_backend='openai_compatible', target_backend='openai_compatible',
+                   use_slow_update=False, use_meta_skill=False, eval_test=False, sel_env_num=1)
+        calls = []
+
+        class Bridge:
+            def run(self, entry, text, output):
+                output = Path(output)
+                output.mkdir(parents=True, exist_ok=False)
+                calls.append((entry['id'], entry['split'], output))
+                path = output / 'result.json'
+                write_json(path, dict(dataset='alfworld', task_id=entry['id'], instruction='Fixture task.',
+                                     success=False, score=0, trajectory=[], steps=0))
+                return path
+
+        tasks = [dict(id=f'train-{i}', split='train') for i in range(96)]
+        tasks.append(dict(id='heldout', split='val'))
+        adapter = create_adapter(tasks, Bridge())
+        # Exercise real trainer -> loader -> adapter -> executor -> result
+        # conversion without calling paid model APIs for reflection.
+        with patch.object(adapter, 'reflect', return_value=[]), contextlib.redirect_stdout(io.StringIO()):
+            ReflACTTrainer(cfg, adapter).train()
+        train_calls = [row for row in calls if row[1] == 'train']
+        self.assertEqual(len(train_calls), 4 * 96)
+        for epoch in range(4):
+            rows = train_calls[epoch * 96:(epoch + 1) * 96]
+            self.assertEqual({row[0] for row in rows}, {f'train-{i}' for i in range(96)})
+            batches = {}
+            for _, _, output in rows:
+                step = next(part for part in output.parts if part.startswith('step_'))
+                batches[step] = batches.get(step, 0) + 1
+            self.assertEqual(list(batches.values()), [40, 40, 16])
 
 
 class Trace2SkillResultTests(unittest.TestCase):

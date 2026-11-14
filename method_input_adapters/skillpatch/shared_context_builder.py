@@ -59,7 +59,6 @@ def build_native_context(path: Path, benchmark: str) -> DiagnosisContext:
     limitations = [
         "Native result provenance is limited to this saved JSON and its content hash; "
         "no independent task or Skill snapshot manifest is available.",
-        "Saved Runner steps are not a complete model-message or tool-protocol transcript. "
         "A thought field is model-returned text, not verified internal reasoning.",
     ]
     skill_text = record.get("retrieved_memory_text")
@@ -83,16 +82,8 @@ def build_native_context(path: Path, benchmark: str) -> DiagnosisContext:
                      "evaluation_summary", "error", "errors", "status")
     feedback = {key: record[key] for key in feedback_keys if key in record}
     add("F0001", "feedback", json.dumps(feedback, ensure_ascii=False, indent=2, allow_nan=False), "")
-    complete = record.get("trajectory_complete")
-    if complete is not None and type(complete) is not bool:
-        raise ValueError("trajectory_complete must be boolean or null")
     if not trajectory:
         limitations.append("Saved trajectory is empty.")
-    if complete is None:
-        limitations.append("Trajectory completeness is not explicitly recorded; it is unknown, "
-                           "even when success or done is true.")
-    elif not complete:
-        limitations.append("Trajectory is explicitly partial; missing actions cannot be inferred.")
     if "score" not in record:
         limitations.append("No final score is recorded; do not substitute zero.")
     if "success" not in record:
@@ -106,7 +97,7 @@ def build_native_context(path: Path, benchmark: str) -> DiagnosisContext:
     context = DiagnosisContext(
         run_id=str(record.get("run_id") or path.stem), benchmark=benchmark, task_id=task_id,
         task_digest=_digest(instruction), skill_digest=skill_digest,
-        trajectory_complete=complete, items=items, limitations=limitations, input_digest="",
+        items=items, limitations=limitations, input_digest="",
     )
     if type(record.get("success")) is bool and not record.get("error") and not record.get("errors"):
         context.task_succeeded = record["success"]

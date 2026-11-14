@@ -34,7 +34,7 @@ def render_diagnosis_context(discovery: DiagnosisContext) -> str:
     metadata = {
         "run_id": discovery.run_id, "benchmark": discovery.benchmark, "task_id": discovery.task_id,
         "input_digest": discovery.input_digest, "task_digest": discovery.task_digest,
-        "skill_digest": discovery.skill_digest, "trajectory_complete": discovery.trajectory_complete,
+        "skill_digest": discovery.skill_digest,
         "relative_path_convention": ("relative to the prepared skills root; skill_id identifies <package>/SKILL.md"
                                      if discovery.benchmark == "skillsbench" else
                                      "native result items use source JSON pointers; original Skill file boundaries may be unavailable"),

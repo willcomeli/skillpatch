@@ -26,7 +26,6 @@ class DiagnosisContext:
     task_id: str
     task_digest: str
     skill_digest: str | None
-    trajectory_complete: bool | None
     items: list[ContextItem]
     limitations: list[str]
     input_digest: str

@@ -8,6 +8,7 @@ from pathlib import Path
 
 from method_input_adapters.skillpatch import build_diagnosis_context, get_diagnosis_adapter, register_diagnosis_adapter
 from context import render_diagnosis_context
+from excutor.executor_adapter.storage import jsonable
 
 
 class NativeDiagnosisTests(unittest.TestCase):
@@ -41,7 +42,7 @@ class NativeDiagnosisTests(unittest.TestCase):
                 self.assertEqual(context.items[1].text, row['retrieved_memory_text'])
                 self.assertEqual(json.loads(context.items[2].text), row['trajectory'][0])
                 self.assertEqual(context.items[2].observation['json_pointer'], '/trajectory/0')
-                self.assertIsNone(context.trajectory_complete)
+                self.assertNotIn('trajectory_complete', jsonable(context))
                 self.assertIn('Create the report.', render_diagnosis_context(context))
 
     def test_directory_and_file_inputs_match(self):
@@ -76,9 +77,21 @@ class NativeDiagnosisTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Expected dataset'):
             get_diagnosis_adapter('alfworld').build_diagnosis_context(self.save())
         for changes in ({'steps': 2}, {'trajectory': 'text'}, {'instruction': ''},
-                        {'status': 'in_progress'}, {'trajectory_complete': 'yes'}):
+                        {'status': 'in_progress'}):
             with self.subTest(changes=changes), self.assertRaises(ValueError):
                 build_diagnosis_context(self.save({**self.row, **changes}))
+
+    def test_completeness_metadata_is_not_validated_or_forwarded_to_the_method(self):
+        for value in (None, False, True, 'unknown'):
+            row = {**self.row, 'dataset': 'scienceworld', 'trajectory_complete': value}
+            source = self.save(row)
+            context = build_diagnosis_context(source)
+            self.assertFalse(hasattr(context, 'trajectory_complete'))
+            self.assertNotIn('trajectory_complete', jsonable(context))
+            self.assertNotIn('trajectory_complete', render_diagnosis_context(context))
+            self.assertFalse(any('completeness' in x.lower() or 'model-message' in x.lower()
+                                 for x in context.limitations))
+            self.assertEqual(json.loads(source.read_text()), row)
 
     def test_batches_and_nonfinite_numbers_are_rejected(self):
         for data in ([self.row], {**self.row, 'score': float('nan')},

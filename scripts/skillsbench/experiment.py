@@ -6,7 +6,7 @@ scripts.skillsbench.experiment. All custom wiring lives in this script.
 
 import argparse
 from contextlib import redirect_stderr, redirect_stdout
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 import multiprocessing
 from dataclasses import replace
 import json
@@ -83,7 +83,8 @@ def load_settings(path, environment, task_names=(), *, require_credentials=True)
 def request_for(task, cfg, native):
     # Agent/verifier timeouts, CPU, memory, storage and build budgets remain in
     # the unchanged task.md consumed by BenchFlow. No extra idle/run/step cap.
-    sandbox = metadata(task).get('sandbox', {})
+    task_metadata = metadata(task)
+    sandbox = task_metadata.get('environment', task_metadata.get('sandbox', {}))
     setup_timeout = sandbox.get('build_timeout_sec', 1800)
     if type(setup_timeout) not in (int, float) or not math.isfinite(setup_timeout) or setup_timeout <= 0:
         raise ValueError(f'Invalid task sandbox build timeout: {task}')
@@ -202,15 +203,10 @@ def optimize_skillopt_one(baseline, request, skill, output, environment, optimiz
     frozen = tree_hashes(baseline)
 
     class SingleTaskAdapter(SharedExecutionAdapter):
-        def build_train_env(self, batch_size, seed, **kwargs):
-            return [{'id': request.task_dir.name}]
-
-        def build_eval_env(self, env_num, split, seed, **kwargs):
-            if split not in {'val', 'valid_seen', 'selection'}:
-                raise ValueError('This protocol has only source-task validation')
-            return [{'id': request.task_dir.name}]
-
         def rollout(self, env_manager, skill_content, out_dir, **kwargs):
+            entries = list(env_manager)
+            if len(entries) != 1 or entries[0]['id'] != request.task_dir.name:
+                raise ValueError('SkillOpt batch must contain exactly the original source task')
             if tree_hashes(baseline) != frozen:
                 raise ValueError('Shared reference trajectory changed')
             out_dir = Path(out_dir)
@@ -238,8 +234,12 @@ def optimize_skillopt_one(baseline, request, skill, output, environment, optimiz
     # Model transport configuration matches the existing method adapter. These
     # are method HTTP settings; they do not limit benchmark task execution.
     cfg.setdefault('optimizer_openai_compatible_timeout_seconds', 1800)
+    # The current trainer reads batches from get_dataloader(), including
+    # selection. Bind both roles explicitly to this one source task.
+    tasks = [{'id': request.task_dir.name, 'task_type': request.task_dir.name, 'split': split}
+             for split in ('train', 'val')]
     with skillopt_chat_parameters(optimizer.model):
-        summary = ReflACTTrainer(cfg, SingleTaskAdapter([], None)).train()
+        summary = ReflACTTrainer(cfg, SingleTaskAdapter(tasks, None)).train()
     if tree_hashes(baseline) != frozen:
         raise ValueError('Shared reference trajectory changed during SkillOpt')
     return summary
@@ -291,13 +291,34 @@ def _batch_results(worker, jobs, concurrency, secrets):
         return
     with ProcessPoolExecutor(max_workers=concurrency,
                              mp_context=multiprocessing.get_context('spawn')) as pool:
-        futures = {pool.submit(worker, *arguments): key for key, arguments in jobs}
-        for future in as_completed(futures):
-            try:
-                result = future.result()
-            except Exception as error:
-                result = _failure(error, secrets)
-            yield futures[future], result
+        # Keep only active slots submitted. On interruption the pool must not
+        # drain the rest of an already queued full-dataset experiment.
+        remaining = iter(jobs)
+        futures = {}
+
+        def submit_next():
+            item = next(remaining, None)
+            if item is not None:
+                key, arguments = item
+                futures[pool.submit(worker, *arguments)] = key
+
+        for _ in range(concurrency):
+            submit_next()
+        try:
+            while futures:
+                completed, _ = wait(futures, return_when=FIRST_COMPLETED)
+                for future in completed:
+                    key = futures.pop(future)
+                    try:
+                        result = future.result()
+                    except Exception as error:
+                        result = _failure(error, secrets)
+                    yield key, result
+                for _ in completed:
+                    submit_next()
+        finally:
+            for future in futures:
+                future.cancel()
 
 
 def _baseline_job(name, request, folder, environment, prepare_only):

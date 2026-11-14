@@ -18,7 +18,15 @@ def load_source(diagnosis_dir: Path, issue_id: str):
     if state.get('status') != 'completed':
         raise ValueError('Stage2 requires a completed Stage1 report')
     raw = read_json(root / 'input/context.json')
-    context = DiagnosisContext(**{**raw, 'items': [ContextItem(**row) for row in raw['items']]})
+    # Verify legacy archives with their original digest, but do not forward the
+    # retired completeness label into new method inputs.
+    fields = {key: value for key, value in raw.items() if key != 'trajectory_complete'}
+    retired_notes = ('Trajectory completeness', 'Trajectory is explicitly partial;',
+                     'Trajectory is partial;', 'trajectory_complete refers to')
+    fields['limitations'] = [line.replace(
+        'Saved Runner steps are not a complete model-message or tool-protocol transcript. ', '')
+        for line in raw['limitations'] if not line.startswith(retired_notes)]
+    context = DiagnosisContext(**{**fields, 'items': [ContextItem(**row) for row in raw['items']]})
     digest = context.input_digest
     # Hash the archived fields, before dataclass defaults add newer optional fields.
     encoded = json.dumps({key: value for key, value in raw.items() if key != 'input_digest'},

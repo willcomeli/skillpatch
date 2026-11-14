@@ -11,7 +11,7 @@ from method_input_adapters.skillpatch.models import DiagnosisContext, ContextIte
 def make_context():
     return DiagnosisContext(
         run_id="fresh-run", benchmark="test", task_id="task-a", task_digest="sha256:task",
-        skill_digest="sha256:skills", trajectory_complete=True, limitations=[], input_digest="sha256:input",
+        skill_digest="sha256:skills", limitations=[], input_digest="sha256:input",
         items=[
             ContextItem("Q000001", "task", "Preserve duplicate records for this task.", "/run/task.md"),
             ContextItem("S000001", "skill", "# Table cleanup\nRemove duplicate records when uniqueness is required.",
@@ -203,17 +203,12 @@ class DiscoveryValidationTests(unittest.TestCase):
         self.payload["coverage_notes"] = ["The unavailable attachment limits the review."]
         validate_report(self.payload, self.context)
 
-    def test_partial_or_unknown_trajectory_requires_insufficient_when_no_conflict(self):
-        for complete in (False, None):
-            with self.subTest(complete=complete):
-                self.context.trajectory_complete = complete
-                self.payload.update(status="no_supported_conflict", conflicts=[], coverage_notes=["Trajectory coverage is limited."])
-                validate_report(self.payload, self.context)
-                self.payload["status"] = "insufficient_evidence"
-                validate_report(self.payload, self.context)
+    def test_no_conflict_and_insufficient_evidence_do_not_require_coverage_metadata(self):
+        for status in ('no_supported_conflict', 'insufficient_evidence'):
+            self.payload.update(status=status, conflicts=[], coverage_notes=[])
+            validate_report(self.payload, self.context)
 
-    def test_partial_trajectory_can_support_local_candidate_with_coverage_note(self):
-        self.context.trajectory_complete = False
+    def test_local_candidate_can_include_a_concrete_evidence_limitation(self):
         self.payload["coverage_notes"] = ["Only the displayed execution interval was reviewed."]
         self.assertEqual(validate_report(self.payload, self.context).status, "conflicts_found")
 

@@ -82,10 +82,6 @@ def _sanitize(value: Any, limitations: list[str], context_id: str, field: str = 
                 f"{context_id} {field}: image placeholder records an image-view result, "
                 "but the underlying image content is not available in this text items."
             )
-            limitations.append(
-                "trajectory_complete refers to recorded event coverage, "
-                "not complete observability of underlying artifacts."
-            )
         clean, count = _DATA_URI.subn("[non-text data URI omitted]", value)
         clean, encoded_count = _LONG_BASE64.subn("[encoded binary payload omitted]", clean)
         if count or encoded_count:
@@ -330,15 +326,6 @@ def build_diagnosis_context(run_dir: Path) -> DiagnosisContext:
             text = _field_dump(_sanitize(_loads(text), limitations, context_id))
         items.append(ContextItem(context_id, "feedback", text, str(path), 1, version=sha256_file(path)))
 
-    complete = execution.get("trajectory_complete")
-    if complete is not None and type(complete) is not bool:
-        raise ValueError("trajectory_complete must be a boolean or null")
-    if malformed or summary.get("partial_trajectory") is True or trajectory_summary.get("partial_trajectory") is True:
-        complete = False
-    if complete is False:
-        limitations.append("Trajectory is partial; absence of an observed step does not establish that it never occurred.")
-    elif complete is None:
-        limitations.append("Trajectory completeness is unknown; missing-step claims require caution.")
     if result["status"] != "completed" or execution.get("status") != "completed":
         limitations.append(f"Run/execution status is {result['status']}/{execution.get('status')}; this alone is not a skill conflict.")
     if result.get("errors") or execution.get("errors") or summary.get("error"):
@@ -358,7 +345,7 @@ def build_diagnosis_context(run_dir: Path) -> DiagnosisContext:
     limitations = list(dict.fromkeys(limitations))
     discovery = DiagnosisContext(
         run_id=root.name, benchmark=result["benchmark"], task_id=result["task_id"],
-        task_digest=digest, skill_digest=skill_digest, trajectory_complete=complete,
+        task_digest=digest, skill_digest=skill_digest,
         items=items, limitations=limitations, input_digest="",
     )
     if (result["status"] == "completed" and execution.get("status") == "completed"

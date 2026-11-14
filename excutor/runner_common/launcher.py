@@ -1,7 +1,10 @@
 """Compose native Runners, model clients and Skill banks outside the CLI."""
 
 import json
+from http.client import IncompleteRead
+from itertools import count
 import shutil
+from ssl import SSLError, SSLCertVerificationError
 import time
 from pathlib import Path
 from urllib.request import Request, urlopen
@@ -33,8 +36,8 @@ class ChatClient:
         self.stream_required = str(environment.get('EXECUTION_STREAM', 'false')).lower() in {'true', '1', 'yes'}
         self.diagnostics_path = None
         self.secrets = secret_values(environment)
-        if type(config.max_retries) is not int or config.max_retries < 0:
-            raise ValueError('max_retries must be a nonnegative integer')
+        if config.max_retries is not None and (type(config.max_retries) is not int or config.max_retries < 0):
+            raise ValueError('max_retries must be a nonnegative integer or None (unlimited)')
         if not self.key or not self.url:
             raise ValueError('Native execution requires configured API key and base URL')
 
@@ -117,27 +120,33 @@ class ChatClient:
 
     def chat(self, messages):
         body = {'model': self.config.model, 'messages': messages,
-                'temperature': self.config.temperature, 'max_tokens': self.config.max_tokens}
-        for attempt in range(self.config.max_retries + 1):
+                'temperature': self.config.temperature}
+        if self.config.max_tokens is not None:
+            body['max_tokens'] = self.config.max_tokens
+        for attempt in count():
+            exhausted = self.config.max_retries is not None and attempt >= self.config.max_retries
             try:
                 result = self._request(body)
                 return self._checked_action(result)
             except HTTPError as error:
                 status = error.code
                 error.close()
-                if status not in {408, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524, 525, 526, 527, 530} or attempt == self.config.max_retries:
+                if status not in {408, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524, 525, 526, 527, 530} or exhausted:
                     raise ValueError(f'Model HTTP request failed: {status}') from None
-            except (URLError, TimeoutError, ConnectionError):
-                if attempt == self.config.max_retries:
+            except SSLCertVerificationError:
+                raise
+            except (URLError, TimeoutError, ConnectionError, IncompleteRead, SSLError):
+                if exhausted:
                     raise
             except IncompleteModelResponse as error:
-                if attempt == self.config.max_retries:
+                if exhausted:
                     if error.finish_reason == 'length':
                         raise ModelActionBudgetExceeded(str(error)) from None
                     raise
             self.retry_count += 1
-            print(f'Model request transient failure; retry {attempt + 1}/{self.config.max_retries}', flush=True)
-            time.sleep(min(2 ** attempt, 4))
+            budget = 'unlimited' if self.config.max_retries is None else self.config.max_retries
+            print(f'Model request transient failure; retry same request {attempt + 1}/{budget}', flush=True)
+            time.sleep(2 ** min(attempt, 2))
 
 
 class FileSkillBank:

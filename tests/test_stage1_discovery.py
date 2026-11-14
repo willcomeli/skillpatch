@@ -34,7 +34,7 @@ class Stage1Tests(unittest.TestCase):
         self.source=self.root/'native.json';self.source.write_text('{}')
         prompt=self.root/'prompt.md';prompt.write_text('Analyze observed skill use.')
         self.config=DiscoveryConfig(AgentConfig('fixture','https://example.invalid'),prompt)
-        self.context=DiagnosisContext('run','appworld','fixture_1','task',None,None,[
+        self.context=DiagnosisContext('run','appworld','fixture_1','task',None,[
             ContextItem('Q0001','task','Do the task.',str(self.source)),
             ContextItem('S0001','skill','Check dates.',str(self.source)),
             ContextItem('T000001','trajectory','Used local dates.',str(self.source)),
