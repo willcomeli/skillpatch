@@ -12,11 +12,10 @@ from uuid import uuid4
 from excutor.executor_adapter.storage import now, sha256_file, tree_hashes, write_json, jsonable
 from method.skillpatch.patch_diagnosis.config import load_discovery_config
 from method.skillpatch.patch_diagnosis.discovery import run_discovery
-from method.skillpatch.patch_diagnosis.discovery_validation import validate_report, validate_saved_report
 from method.skillpatch.patch_generation.config import Stage2Config, load_stage2_config
 from method.skillpatch.patch_generation.pipeline import run_stage2
+from method.skillpatch.patch_generation.source import load_diagnosis
 from method.skillpatch.patch_validation.appworld_patch_validation.pipeline import run_validation
-from method_input_adapters.skillpatch.models import ContextItem, DiagnosisContext
 from set_up.environment import load_environment, redact, secret_values
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,14 +25,9 @@ def read_json(path):
     return json.loads(Path(path).read_text(encoding='utf-8'))
 
 
-def issue_ids(diagnosis):
-    raw = read_json(diagnosis / 'input/context.json')
-    context = DiagnosisContext(**{**raw, 'items': [ContextItem(**item) for item in raw['items']]})
-    payload = read_json(diagnosis / 'report.json')
-    report = (validate_saved_report(payload, context) if 'schema_version' in payload
-              else validate_report(payload, context))
-    return [item.conflict_id for item in [*report.conflicts, *getattr(report, 'improvements', [])]] + [
-        f'O{index:06d}' for index in range(1, len(report.other_findings) + 1)]
+def issue_ids(diagnosis_dir):
+    """Keep existing experiment callers compatible with the shared archive API."""
+    return load_diagnosis(Path(diagnosis_dir)).issue_ids
 
 
 def snapshot_agent(config, folder):
@@ -62,9 +56,11 @@ def skillpatch(manifest_path, output, environment, *, profile='experiment', task
     manifest = load_manifest(manifest_path)
     manifest_digest = sha256_file(manifest_path)
     rows = manifest['rows'][:task_limit] if task_limit else manifest['rows']
-    discovery = load_discovery_config(diagnosis_config or ROOT / 'configs/skillpatch-stage1.toml')
-    generation = load_stage2_config(stage2_config or ROOT / 'configs/skillpatch-stage2.toml')
-    generation_agent = load_discovery_config(generation.generation_config)
+    discovery = load_discovery_config(diagnosis_config or ROOT / 'configs/skillpatch-stage1.toml',
+                                      environment=environment)
+    generation = load_stage2_config(stage2_config or ROOT / 'configs/skillpatch-stage2.toml',
+                                   environment=environment)
+    generation_agent = generation.agent_config(environment)
     if not prepare_only:
         # Check all three model consumers before launching the first diagnosis.
         native = read_json(manifest['execution_config']['path'])
@@ -110,7 +106,7 @@ def skillpatch(manifest_path, output, environment, *, profile='experiment', task
         gen_path = snapshot_agent(generation_agent, output / 'inputs/generation')
         settings_hashes = tree_hashes(output / 'inputs')
         discovery = load_discovery_config(diag_path)
-        generation = Stage2Config(gen_path)
+        generation = Stage2Config(gen_path, load_discovery_config(gen_path))
         plan = {'profile': profile, 'prepare_only': prepare_only, 'task_limit': task_limit,
                 'max_issues_per_task': max_issues_per_task, 'selected_task_ids': [row['task_id'] for row in rows],
                 'diagnosis_config': diag_path, 'generation_config': gen_path,
@@ -140,7 +136,8 @@ def skillpatch(manifest_path, output, environment, *, profile='experiment', task
             elif prepare_only:
                 record['status'] = 'prepared'
             else:
-                ids = issue_ids(diagnosis)
+                archive = load_diagnosis(diagnosis)
+                ids = archive.issue_ids
                 record['reported_issue_count'] = len(ids)
                 ids = ids[:max_issues_per_task] if max_issues_per_task else ids
                 for issue_index, identifier in enumerate(ids, 1):
@@ -149,7 +146,7 @@ def skillpatch(manifest_path, output, environment, *, profile='experiment', task
                     record['issues'].append(issue)
                     state['phase'] = 'generation'
                     save()
-                    result = run_stage2(diagnosis, identifier, generation, issue_dir / 'generation', environment,
+                    result = run_stage2(archive, identifier, generation, issue_dir / 'generation', environment,
                                         progress=lambda message: print(message, flush=True))
                     issue['generation_status'] = result['status']
                     check_stage(result, {'generated', 'unpatchable', 'insufficient_evidence'}, 'Generation')
@@ -191,9 +188,7 @@ def nonnegative(value):
     return number
 
 
-def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
-    commands = parser.add_subparsers(dest='command', required=True)
+def add_commands(commands):
     collect_parser = commands.add_parser('collect', help='Collect one shared set of initial-Skill training trajectories')
     collect_parser.add_argument('--config', type=Path, default=ROOT / 'configs/appworld/execution.toml')
     collect_parser.add_argument('--limit', type=nonnegative, default=0, help='First N tasks in configured order; 0 = all')
@@ -208,17 +203,21 @@ def main(argv=None):
         sub.add_argument('--output', type=Path, help='New directory; defaults to a unique directory under runs/appworld')
         sub.add_argument('--env-file', type=Path, default=ROOT / '.env')
         sub.add_argument('--prepare-only', action='store_true', help='Prepare inputs without model calls or AppWorld servers')
-    args = parser.parse_args(argv)
+    collect_parser.set_defaults(handler=run_command, appworld_action='collect')
+    method.set_defaults(handler=run_command, appworld_action='skillpatch')
+
+
+def run_command(args):
     environment = {}
     try:
         environment = load_environment(args.env_file) if args.env_file.is_file() else load_environment()
         if not args.env_file.is_file() and args.env_file != ROOT / '.env':
             raise ValueError(f'Environment file does not exist: {args.env_file}')
         stamp = datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')
-        label = 'collect' if args.command == 'collect' else f'skillpatch-{args.profile}'
+        label = 'collect' if args.appworld_action == 'collect' else f'skillpatch-{args.profile}'
         output = args.output or ROOT / 'runs/appworld' / f'{label}-{stamp}-{uuid4().hex[:8]}'
         print(f'Output: {output.resolve()}', flush=True)
-        if args.command == 'collect':
+        if args.appworld_action == 'collect':
             from set_up.appworld_trajectories import collect
             result = collect(args.config, output, environment, limit=args.limit, prepare_only=args.prepare_only)
         else:
@@ -235,6 +234,12 @@ def main(argv=None):
     except (OSError, ValueError, KeyError, TypeError) as error:
         print(redact(f'error: {error}', secret_values(environment)), file=sys.stderr)
         return 2
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    add_commands(parser.add_subparsers(dest='appworld_action', required=True))
+    return run_command(parser.parse_args(argv))
 
 
 if __name__ == '__main__':

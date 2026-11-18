@@ -17,8 +17,6 @@ import tomllib
 from types import SimpleNamespace
 from uuid import uuid4
 
-import yaml
-
 from excutor.executor_adapter.models import RunRequest
 from excutor.executor_adapter.registry import get_execution_adapter
 from excutor.executor_adapter.storage import hash_manifest, jsonable, now, sha256_file, tree_hashes, write_json
@@ -37,6 +35,8 @@ def read(path):
 
 
 def metadata(task):
+    import yaml
+
     text = (task / 'task.md').read_text(encoding='utf-8')
     parts = text.split('---', 2)
     if len(parts) != 3 or parts[0].strip():
@@ -137,7 +137,8 @@ def method_configs(folder, optimizer):
                         api_key_env=optimizer.api_key_env, harness=optimizer.harness,
                         command=original.agent.command if original.agent.harness == optimizer.harness else ())
         paths[name] = snapshot_agent(replace(original, agent=agent), folder / name)
-    return paths, Stage2Config(paths['generation'])
+    generation = paths['generation']
+    return paths, Stage2Config(generation, load_discovery_config(generation))
 
 
 def optimize_skillpatch(baseline, request, output, environment, optimizer):
@@ -146,7 +147,7 @@ def optimize_skillpatch(baseline, request, output, environment, optimizer):
     from method.skillpatch.patch_generation.pipeline import run_stage2
     from method.skillpatch.patch_validation.skillsbench_patch_validation.config import ValidationConfig
     from method.skillpatch.patch_validation.skillsbench_patch_validation.pipeline import run_validation
-    from set_up.appworld_experiments import issue_ids
+    from method.skillpatch.patch_generation.source import load_diagnosis
 
     configs, generation = method_configs(output / 'configs', optimizer)
     diagnosis = output / 'diagnosis'
@@ -162,9 +163,10 @@ def optimize_skillpatch(baseline, request, output, environment, optimizer):
         raise ValueError(f'SkillPatch diagnosis {result["status"]}')
     records = []
     # All original issues; independent candidates, without an issue-count cap.
-    for index, identifier in enumerate(issue_ids(diagnosis), 1):
+    archive = load_diagnosis(diagnosis)
+    for index, identifier in enumerate(archive.issue_ids, 1):
         folder = output / 'issues' / f'{index:06d}'
-        generated = run_stage2(diagnosis, identifier, generation, folder / 'generation', environment)
+        generated = run_stage2(archive, identifier, generation, folder / 'generation', environment)
         if generated['status'] == 'cancelled':
             raise KeyboardInterrupt
         row = {'issue_id': identifier, 'generation_status': generated['status']}
@@ -676,8 +678,7 @@ def run(config_path, output, environment, *, task_names=(), methods=METHODS, pre
     return state
 
 
-def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
+def configure_parser(parser):
     parser.add_argument('--config', type=Path, default=ROOT / 'configs/skillsbench/experiment.toml')
     parser.add_argument('--env-file', type=Path, default=ROOT / '.env')
     parser.add_argument('--output', type=Path)
@@ -689,13 +690,16 @@ def main(argv=None):
     parser.add_argument('--concurrency', type=int, default=1)
     parser.add_argument('--reuse-baselines-from', type=Path)
     parser.add_argument('--reuse-after-step-retry-upgrade', action='store_true')
-    args = parser.parse_args(argv)
+    parser.set_defaults(handler=run_command, command_parser=parser)
+
+
+def run_command(args):
     if args.concurrency < 1:
-        parser.error('--concurrency must be positive')
+        args.command_parser.error('--concurrency must be positive')
     if len(args.methods) != len(set(args.methods)):
-        parser.error('Methods must be distinct')
+        args.command_parser.error('Methods must be distinct')
     if args.resume and not args.output:
-        parser.error('--resume requires --output')
+        args.command_parser.error('--resume requires --output')
     output = args.output or ROOT / 'runs/skillsbench' / ('experiment-' + uuid4().hex[:12])
     environment = load_environment(args.env_file)
     print(f'Output: {output.resolve()}', flush=True)
@@ -705,6 +709,12 @@ def main(argv=None):
                  baseline_only=args.baseline_only, reuse_after_step_retry_upgrade=args.reuse_after_step_retry_upgrade)
     print(f'Status: {result["status"]}', flush=True)
     return 0 if result['status'] in {'prepared', 'completed'} else 2
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    configure_parser(parser)
+    return run_command(parser.parse_args(argv))
 
 
 if __name__ == '__main__':

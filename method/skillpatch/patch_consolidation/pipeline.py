@@ -1,9 +1,10 @@
 """Read generated candidates and produce one consolidation proposal."""
 from pathlib import Path
 from excutor.executor_adapter.storage import tree_hashes, write_json, jsonable, now
-from method.skillpatch.patch_diagnosis.config import load_discovery_config
 from set_up.environment import secret_values, redact, redact_artifacts
-from .source import load_patch, bind_target
+from method.skillpatch.patch_generation.models import NOTE_EXAMPLE_FORMAT
+from method.skillpatch.patch_generation.source import load_patch, read_json
+from .source import bind_target
 from .patch_consolidation import propose_consolidation
 
 
@@ -22,7 +23,13 @@ def run_consolidation(existing, incoming: Path, skill_key: str, config, output: 
     secrets = set(secret_values(environment))
     emit = progress or (lambda _: None)
     try:
-        agent_config = load_discovery_config(config.consolidation_config)
+        formats = {getattr(patch, 'format', None) for patch, _, _ in loaded}
+        if len(formats) != 1:
+            raise ValueError('Consolidation requires candidates with the same patch format')
+        patch_format = formats.pop()
+        agent_config = config.proposal_config(environment, patch_format=patch_format)
+        if patch_format == NOTE_EXAMPLE_FORMAT:
+            from method.skillpatch.boundary_aware_patch_induction.cases import validate_boundary_cases
         if environment.get(agent_config.agent.api_key_env):
             secrets.add(environment[agent_config.agent.api_key_env])
         pinned = {root: tree_hashes(root) for root in protected}
@@ -36,16 +43,24 @@ def run_consolidation(existing, incoming: Path, skill_key: str, config, output: 
         for index, (patch, source, episode) in enumerate(loaded):
             collection = f'source_{index}'
             contexts[collection] = source.context
-            entries.append({'collection': collection, 'patch': jsonable(patch),
+            entry = {'collection': collection, 'patch': jsonable(patch),
                 'issue': jsonable(source.conflict), 'generation_dir': str(episode),
-                'diagnosis_dir': str(source.diagnosis_dir)})
-        write_json(output / 'config.json', config)
+                'diagnosis_dir': str(source.diagnosis_dir)}
+            if patch_format == NOTE_EXAMPLE_FORMAT:
+                audit = episode / 'boundary_induction'
+                initial = read_json(audit / 'initial/response.json')
+                proposed = read_json(audit / 'cases/response.json')
+                validate_boundary_cases(proposed, {item.context_id for item in source.context.items})
+                entry['decision'] = initial.get('decision')
+                entry['boundary_cases'] = proposed['boundary_cases']
+            entries.append(entry)
+        write_json(output / 'config.json', {'consolidation_config': config.consolidation_config})
         write_json(output / 'sources.json', entries)
         write_json(output / 'target_binding.json', bindings[0])
         state['phase'] = 'proposal'
         emit('Proposing consolidation of candidate patches; source archives remain separate')
         proposal = propose_consolidation(entries, contexts, bindings[0], agent_config,
-            output / 'proposal', environment, client=client, progress=emit)
+            output / 'proposal', environment, patch_format=patch_format, client=client, progress=emit)
         if any(tree_hashes(root) != hashes for root, hashes in pinned.items()):
             raise ValueError('A source archive changed during consolidation')
         state.update(status='proposed', phase='finished', action=proposal['action'],

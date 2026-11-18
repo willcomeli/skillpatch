@@ -396,12 +396,14 @@ def resume_collection(shared_dir, environment, *, prepare_only=False) -> dict:
         return redact(state, secrets)
 
 
-def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
+def configure_parser(parser):
     parser.add_argument('--shared-dir', type=Path, required=True)
     parser.add_argument('--env-file', type=Path, default=ROOT / '.env')
     parser.add_argument('--prepare-only', action='store_true')
-    args = parser.parse_args(argv)
+    parser.set_defaults(handler=run_command)
+
+
+def run_command(args):
     environment = {}
     try:
         # Preparation does not even need to read credentials.
@@ -412,6 +414,12 @@ def main(argv=None):
     except (OSError, ValueError, TypeError, KeyError) as error:
         print(redact(f'error: {error}', secret_values(environment)), flush=True)
         return 2
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    configure_parser(parser)
+    return run_command(parser.parse_args(argv))
 
 
 if __name__ == '__main__':

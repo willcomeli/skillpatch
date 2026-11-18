@@ -2,7 +2,6 @@
 
 from pathlib import Path
 from ..execution import SharedExecutorBridge, load_tasks
-from .adapter import SharedExecutionAdapter
 from ..chat_compat import skillopt_chat_parameters
 
 
@@ -12,6 +11,8 @@ def train(manifest, initial_skill, output, environment, *, config=None, model='d
     from skillopt.config import load_config, flatten_config
     from skillopt.engine.trainer import ReflACTTrainer
     from skillopt.model import configure_openai_compatible
+
+    from .adapter import SharedExecutionAdapter
     root = Path(__file__).resolve().parents[2]
     tasks = load_tasks(manifest)
     initial_skill = Path(initial_skill).resolve(strict=True)

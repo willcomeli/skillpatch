@@ -1,6 +1,8 @@
 """Exercise the actual upstream loop with shared-executor fixtures, no model API."""
 
 import asyncio
+from contextlib import redirect_stdout
+import io
 import json
 from pathlib import Path
 import subprocess
@@ -64,6 +66,17 @@ class EvoSkillAdapterTests(unittest.TestCase):
         write_json(source, raw)
         with self.assertRaises(ValueError):
             archive_trace(source)
+
+    def test_export_works_through_direct_and_unified_cli(self):
+        from method_input_adapters.__main__ import main as adapter_main
+        from set_up.cli import main as public_main
+        source = self.archive(self.root / 'cli-source.json', score=0.4)
+        for name, main, prefix in [('direct', adapter_main, []), ('unified', public_main, ['baselines'])]:
+            with self.subTest(entry=name), redirect_stdout(io.StringIO()) as stdout:
+                code = main([*prefix, 'evoskill-export', str(source),
+                             '--output', str(self.root / name)])
+            self.assertEqual(code, 0)
+            self.assertEqual(json.loads(stdout.getvalue())['tasks'], 1)
 
     def test_live_candidate_changes_rerun_executor_and_score_receipts_cannot_be_forged(self):
         calls = []

@@ -158,16 +158,24 @@ def evaluate(training_dir, experiment, output, environment, *, prepare_only=Fals
         return state
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+def configure_parser(parser):
     parser.add_argument('--training', type=Path, required=True)
     parser.add_argument('--experiment', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--env-file', type=Path, required=True)
     parser.add_argument('--prepare-only', action='store_true')
-    args = parser.parse_args()
+    parser.set_defaults(handler=run_command)
+
+
+def run_command(args):
     result = evaluate(args.training, args.experiment, args.output, load_environment(args.env_file), prepare_only=args.prepare_only)
     return 0 if result['status'] in {'prepared', 'completed'} else 2
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    configure_parser(parser)
+    return run_command(parser.parse_args(argv))
 
 
 if __name__ == '__main__':

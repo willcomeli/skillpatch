@@ -14,10 +14,9 @@ def read_json(path):
 
 
 def write_json(path, value):
-    from excutor.executor_adapter.storage import jsonable
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(jsonable(value), ensure_ascii=False, indent=2, allow_nan=False) + '\n', encoding='utf-8')
+    from excutor.executor_adapter.storage import write_json as write_atomic_json
+
+    write_atomic_json(Path(path), value)
 
 
 def output_id(benchmark, task_id):

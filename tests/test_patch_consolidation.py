@@ -8,7 +8,7 @@ from harness.agent_client import AgentResult
 from excutor.executor_adapter.storage import write_json, tree_hashes
 from method.skillpatch.patch_diagnosis.config import load_discovery_config
 from method.skillpatch.patch_diagnosis.discovery import run_discovery
-from method.skillpatch.patch_generation.config import Stage2Config
+from method.skillpatch.patch_generation.config import Stage2Config, load_stage2_config
 from method.skillpatch.patch_generation.pipeline import run_stage2
 from method.skillpatch.patch_consolidation.config import ConsolidationConfig, load_consolidation_config
 from method.skillpatch.patch_consolidation.pipeline import run_consolidation
@@ -121,6 +121,37 @@ class ConsolidationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             run_consolidation([self.first],self.second,'date-skill',self.config,
                               self.first.parent/'out',{},client=Client(self.merge))
+
+    def test_shared_evolution_config_uses_env_and_stage_prompts(self):
+        config = self.root / 'evolution.toml'
+        env_file = self.root / 'evolution.env'
+        env = {
+            'TEST_EVOLUTION_MODEL': 'openai/fixture',
+            'TEST_EVOLUTION_BASE_URL': 'http://localhost/v1',
+        }
+        env_file.write_text(''.join(f'{name}={value}\n' for name, value in env.items()))
+        sections = ['[agent]\nmodel_env="TEST_EVOLUTION_MODEL"\nbase_url_env="TEST_EVOLUTION_BASE_URL"']
+        for stage in ('stage1', 'stage2', 'stage3'):
+            (self.root / f'{stage}.md').write_text(stage)
+            sections.append(f'[{stage}]\nprompt_path="{stage}.md"')
+        config.write_text('\n\n'.join(sections))
+
+        discovery = load_discovery_config(config, environment=env)
+        generation = load_stage2_config(config, environment=env).agent_config(env)
+        self.assertEqual(discovery.prompt_path.name, 'stage1.md')
+        self.assertEqual(generation.prompt_path.name, 'stage2.md')
+        self.assertEqual(generation.agent, discovery.agent)
+
+        from set_up.cli import main
+        with patch('harness.agent_client.AgentClient.run', side_effect=Client(self.merge).run) as run, \
+             patch('builtins.print'):
+            code = main(['stage3', '--existing', str(self.first), '--incoming', str(self.second),
+                         '--skill-key', 'date-skill', '--config', str(config), '--env-file', str(env_file),
+                         '--output', str(self.root / 'shared-out')])
+        self.assertEqual(code, 0)
+        agent, prompt = run.call_args.args[:2]
+        self.assertEqual(agent, discovery.agent)
+        self.assertEqual(prompt, 'stage3')
 
     def test_config_and_cli(self):
         from set_up.cli import main

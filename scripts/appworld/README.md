@@ -228,7 +228,7 @@ bash scripts/appworld/recover.sh \
 `set_up.appworld_patch_test` 接收已完成的 `appworld_patch_resume` 训练结果，冻结同一 initial Skill 以及全部生成的补丁。补丁按照固定训练顺序保存在 `SKILL_PATCHES.md` / `SKILL_PATCHES.json`；不按原任务是否修复筛选，也不根据测试结果选择补丁。通过现有 `run_native(..., patch_skill_dir=...)` 和 `PatchedSkillBank` 将 Skill 与补丁补充文本拼接交付执行模型，不改写 initial Skill。
 
 ```bash
-.venvs/methods/bin/python -m set_up.appworld_patch_test \
+.venvs/methods/bin/python -m set_up.cli appworld evaluate \
   --training runs/appworld/full-20261026-v41/skillpatch-recovery \
   --experiment runs/appworld/full-20261026-v41/methods \
   --output runs/appworld/full-20261026-v41/recovery/test/skillpatch \

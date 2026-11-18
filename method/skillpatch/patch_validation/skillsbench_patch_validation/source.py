@@ -4,8 +4,8 @@ from dataclasses import replace
 from method_input_adapters.skillpatch import build_diagnosis_context
 from excutor.executor_adapter.models import RunRequest
 from excutor.executor_adapter.storage import jsonable, hash_manifest, tree_hashes
-from method.skillpatch.patch_generation.source import read_json
-from method.skillpatch.patch_consolidation.source import load_patch
+from method.skillpatch.patch_generation.models import SkillPatch
+from method.skillpatch.patch_generation.source import load_patch, read_json
 from .records import load_execution
 
 
@@ -26,6 +26,8 @@ def load_request(path):
 
 def load_validation_source(path):
     patch, source, episode = load_patch(path)
+    if not isinstance(patch, SkillPatch):
+        raise ValueError("SkillsBench patch validation supports standard SkillPatch candidates only")
     if source.context.benchmark != 'skillsbench':
         raise ValueError('Patch validation currently supports only SkillsBench')
     baseline = load_execution(source.run_dir)

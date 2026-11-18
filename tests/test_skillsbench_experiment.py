@@ -3,6 +3,7 @@
 import json
 import multiprocessing
 import os
+import shutil
 import time
 from pathlib import Path
 import tempfile
@@ -34,6 +35,10 @@ class SkillsBenchExperimentTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
+        support = self.root / 'scripts/skillsbench'
+        support.mkdir(parents=True)
+        shutil.copyfile(exp.ROOT / 'scripts/skillsbench/image_registry_routing.py',
+                        support / 'image_registry_routing.py')
         self.tasks = self.root / 'tasks'
         self.tasks.mkdir()
         for name in ('one', 'two'):

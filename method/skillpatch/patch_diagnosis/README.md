@@ -29,12 +29,14 @@ stage1 和 diagnose 是同一入口的两个名称。执行器 CLI 的 prepare/r
 - `config.py`：诊断阶段配置，引用公共 AgentConfig；session_timeout_sec 控制整个会话。
 - `discovery_validation.py`、`tool/evidence_references.py`、`models.py`、`tool/reporting.py`、`tool/output_language.py`：从旧版迁移报告结构、原文引用和呈现逻辑。
 - 新模型输出沿用旧版 summary/improvements，引用字段仍叫 evidence_id；其值对应输入 items 中的 context_id，目标使用 skill_ref。无需模型自己生成绑定路径、版本或改进编号。
-- harness/agent_client.py 是各阶段可共用的会话调用层，当前只接 OpenHands。Codex 仅下载，尚未接线。
+- SkillPatch 各阶段在 method/skillpatch/session.py 共用 Agent 会话。harness/agent_client.py 根据配置启动 OpenHands 或 Codex。诊断提示词在 prompts/skillpatch/discovery.md。
 - 不再一次性发送完整材料，也没有 max_input_chars 拒绝条件；保留完整 context 文件，由 Agent 按需读取，允许在工作目录记录进度。harness 仍会限制工具输出并压缩历史；不保证全部原文同时驻留模型窗口。
 - 只分析本次提供的材料，不重新执行任务、访问运行容器或自动保留额外任务产物。提示要求不查看其他任务和历史报告；本机 harness 不是文件访问隔离边界。
 - 原生 Runner 的 Skill 文本会生成明确标记的 delivered-memory 快照，供引用和目标绑定。它不证明恢复了原始 Skill 文件，后续补丁部署仍需匹配同一基底文本。
 - Stage1 不调用报告校验器：report.json 原样保存模型 JSON 对象，report.md 只负责展示。不检查字段结构、目标唯一性、字符位置或引用是否匹配；不生成 validation.json。旧版校验工具保留供历史代码使用，不参与当前 Stage1。结果标记为 candidate_diagnosis。
-- Stage2、Stage3 的业务编排和命令尚未迁移，本次只为其提供公共 AgentClient。
+- Stage1 保存一份完整的绑定后上下文。result.json 中的 source_context_digest 记录绑定前的上下文摘要，供 AppWorld 回放核对。
+
+ScienceWorld 批量诊断在生成共享问题索引前调用同一归档校验器。原始报告保留，只有结构与引用均通过且含已绑定目标的问题进入索引。
 
 ## 会话完成与失败
 

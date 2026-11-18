@@ -7,8 +7,12 @@ from method.skillpatch.patch_diagnosis.models import SkillImprovement, Conflict,
 from method_input_adapters.skillpatch.models import DiagnosisContext as DiscoveryInput
 
 
+NOTE_EXAMPLE_FORMAT = "note_example_v1"
+INDUCTIONS = ("standard", "boundary-aware")
+
+
 @dataclass(frozen=True)
-class SkillPatch:
+class PatchIdentity:
     patch_id: str
     source_run_id: str
     source_input_digest: str
@@ -16,8 +20,19 @@ class SkillPatch:
     conflict_type: str
     revision: int
     target: SkillTarget
+
+
+@dataclass(frozen=True)
+class SkillPatch(PatchIdentity):
     when_to_use: str
     how_to_interpret: str
+
+
+@dataclass(frozen=True)
+class NoteExamplePatch(PatchIdentity):
+    note: str
+    example: str
+    format: str = NOTE_EXAMPLE_FORMAT
 
 
 @dataclass

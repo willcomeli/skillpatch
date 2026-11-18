@@ -233,8 +233,7 @@ def run(source, output, environment, *, prepare_only=False, test_splits=('test_n
         return state
 
 
-def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
+def configure_parser(parser):
     parser.add_argument('--source', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--env-file', type=Path, default=ROOT / '.env')
@@ -242,7 +241,10 @@ def main(argv=None):
     parser.add_argument('--test-splits', nargs='+', choices=('test_normal', 'test_challenge'),
                         default=['test_normal'])
     parser.add_argument('--prepare-only', action='store_true')
-    args = parser.parse_args(argv)
+    parser.set_defaults(handler=run_command)
+
+
+def run_command(args):
     environment = {}
     try:
         if args.wait_for:
@@ -257,6 +259,12 @@ def main(argv=None):
     except (OSError, ValueError, KeyError) as error:
         print(redact(str(error), secret_values(environment)), flush=True)
         return 2
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    configure_parser(parser)
+    return run_command(parser.parse_args(argv))
 
 
 if __name__ == '__main__':

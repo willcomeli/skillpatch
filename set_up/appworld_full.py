@@ -217,18 +217,17 @@ def run_full(output, environment, *, config_path=None, manifest_path=None,
     return state
 
 
-def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
-    source = parser.add_mutually_exclusive_group()
-    source.add_argument('--config', type=Path, help='Native config containing the complete official train split')
-    source.add_argument('--trajectory-manifest', type=Path, help='Reuse an already collected full train batch')
+def configure_parser(parser):
     parser.add_argument('--env-file', type=Path, default=ROOT / '.env')
     parser.add_argument('--optimizer-config', type=Path, default=ROOT / 'configs/appworld/optimizer.toml')
     parser.add_argument('--output', type=Path)
     parser.add_argument('--methods', choices=METHODS, nargs='+', default=METHODS)
     parser.add_argument('--max-output-tokens', type=int, default=32768)
     parser.add_argument('--prepare-only', action='store_true')
-    args = parser.parse_args(argv)
+    parser.set_defaults(handler=run_command)
+
+
+def run_command(args):
     environment = {}
     try:
         environment = load_environment(args.env_file)
@@ -246,6 +245,12 @@ def main(argv=None):
     except (OSError, ValueError, KeyError, TypeError) as error:
         print(redact(f'error: {error}', secret_values(environment)), flush=True)
         return 2
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    configure_parser(parser)
+    return run_command(parser.parse_args(argv))
 
 
 if __name__ == '__main__':

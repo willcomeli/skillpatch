@@ -11,6 +11,17 @@ from excutor.scienceworld_runners import runner as scienceworld_runner
 
 
 class NativeRunnerTests(unittest.TestCase):
+    def test_scienceworld_distinguishes_one_percent_from_legacy_full_score(self):
+        environment = scienceworld_runner.RemoteScienceWorldEnv.__new__(
+            scienceworld_runner.RemoteScienceWorldEnv)
+        for scale, expected in (({"score_scale": 100}, 0.01), ({}, 1.0)):
+            with self.subTest(scale=scale):
+                environment._post = Mock(return_value={"score": 1.0, **scale})
+                _, initial_info, _ = environment.reset({"task": "boil"})
+                _, score, _, _ = environment.step("look around")
+                self.assertEqual(initial_info["_normalized_score"], expected)
+                self.assertEqual(score, expected)
+
     def test_all_native_entry_points_are_available(self):
         for runner in (AlfWorldRunner, ScienceWorldRunner, AppWorldRunner):
             self.assertTrue(callable(runner.run_task))

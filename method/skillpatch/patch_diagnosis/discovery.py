@@ -4,11 +4,11 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Callable
 
-from context import refresh_input_digest
+from context import context_digest, refresh_input_digest
 from method_input_adapters.skillpatch import build_diagnosis_context
-from harness.agent_client import AgentClient, parse_json_object
-from excutor.executor_adapter.storage import jsonable, now, sha256_file, tree_hashes, write_json
-from set_up.environment import redact, redact_artifacts, secret_values
+from excutor.executor_adapter.storage import jsonable, now, sha256_file, write_json
+from method.skillpatch.session import run_agent_report, save_prompt, session_secrets
+from set_up.environment import redact, redact_artifacts
 from .config import DiscoveryConfig
 from .tool.reporting import render_model_report
 
@@ -36,7 +36,7 @@ def _bind_delivered_memory(context, inputs):
         'confirm the same base text before using such a patch.'
     )
 
-
+# 整理好轨迹为DiagnoisisContext，输入诊断大模型AgentClient
 def run_discovery(run_dir: Path, config: DiscoveryConfig, output: Path, environment,
                   *, prepare_only=False, client=None, progress: Callable[[str], None] | None = None,
                   input_builder=None) -> dict:
@@ -44,17 +44,15 @@ def run_discovery(run_dir: Path, config: DiscoveryConfig, output: Path, environm
     output = output.expanduser().resolve()
     output.mkdir(parents=True, mode=0o700, exist_ok=False)
     emit = progress or (lambda _: None)
-    secrets = set(secret_values(environment))
-    if environment.get(config.agent.api_key_env):
-        secrets.add(environment[config.agent.api_key_env])
-    secrets = tuple(sorted(secrets, key=len, reverse=True))
+    secrets = session_secrets(config, environment)
     state = {'status': 'running', 'phase': 'input', 'started_at': now(),
              'source': str(source), 'output': str(output), 'prepare_only': prepare_only,
              'semantic_status': 'not_assessed'}
     try:
         emit('Collecting offline diagnosis context')
         context = (input_builder or build_diagnosis_context)(source)
-        if redact(jsonable(context), secrets) != jsonable(context):
+        fields = jsonable(context)
+        if redact(fields, secrets) != fields:
             raise ValueError('Known credential value appears in diagnosis materials; not sent')
         state.update(run_id=context.run_id, benchmark=context.benchmark,
                      task_id=context.task_id, task_succeeded=context.task_succeeded)
@@ -69,19 +67,15 @@ def run_discovery(run_dir: Path, config: DiscoveryConfig, output: Path, environm
             return state
         inputs = output / 'input'
         inputs.mkdir()
-        write_json(inputs / 'source_context.json', context)
+        state['source_context_digest'] = context_digest(fields)
+        del fields
         _bind_delivered_memory(context, inputs)
         refresh_input_digest(context)
+
+        # 写入context.json，作为agent的输入
         context_path = inputs / 'context.json'
         write_json(context_path, context)
-        input_hashes = tree_hashes(inputs)
-        prompt = config.prompt_path.read_text(encoding='utf-8')
-        if not prompt.strip():
-            raise ValueError('Diagnosis prompt is empty')
-        if redact(prompt, secrets) != prompt:
-            raise ValueError('Known credential value appears in diagnosis prompt')
-        (output / 'prompt.md').write_text(prompt, encoding='utf-8')
-        write_json(output / 'config.json', config)
+        prompt = save_prompt(config, output, secrets)
         state.update(run_id=context.run_id, benchmark=context.benchmark, task_id=context.task_id,
                      input_digest=context.input_digest, context_path=str(context_path),
                      item_count=len(context.items), prompt_sha256=sha256_file(output / 'prompt.md'))
@@ -89,23 +83,15 @@ def run_discovery(run_dir: Path, config: DiscoveryConfig, output: Path, environm
             state['status'] = 'prepared'
         else:
             state['phase'] = 'agent'
-            result = (client or AgentClient()).run(config.agent, prompt, [context_path],
-                                                  output / 'agent', environment, progress=emit)
+            # 运行agent，生成诊断报告
+            result, payload = run_agent_report(config, prompt, [context_path], output / 'agent',
+                                               environment, secrets=secrets, protected_input=inputs,
+                                               client=client, progress=emit)
             state['agent_status'] = result.status
-            if tree_hashes(inputs) != input_hashes:
-                raise ValueError('Agent changed diagnosis input materials')
             if result.status != 'completed':
                 state.update(status=result.status, errors=result.errors)
             else:
                 state['phase'] = 'report'
-                if result.report_path is None:
-                    raise ValueError('Completed agent session has no report')
-                report_path = result.report_path.resolve(strict=True)
-                if not report_path.is_relative_to((output / 'agent/workspace').resolve()):
-                    raise ValueError('Agent report is outside its working directory')
-                payload = parse_json_object(report_path.read_text(encoding='utf-8'))
-                if redact(payload, secrets) != payload:
-                    raise ValueError('Known credential value appears in diagnosis report')
                 write_json(output / 'report.json', payload)
                 (output / 'report.md').write_text(render_model_report(payload), encoding='utf-8')
                 improvements = payload.get('improvements')

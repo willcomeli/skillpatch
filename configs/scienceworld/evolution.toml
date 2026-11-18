@@ -1,0 +1,22 @@
+[agent]
+harness = "openhands"
+model_env = "METHOD_MODEL"
+base_url_env = "METHOD_BASE_URL"
+api_key_env = "METHOD_API_KEY"
+session_timeout_sec = 1800
+
+[stage1]
+prompt_path = "../../prompts/skillpatch/discovery.md"
+
+[stage2]
+prompt_path = "../../prompts/skillpatch/patch_generation.md"
+
+[stage3]
+prompt_path = "../../prompts/skillpatch/patch_consolidation.md"
+
+[boundary_aware.stage2]
+inductor_prompt_path = "../../prompts/skillpatch/boundary_aware_patch_induction/patch_inductor.md"
+proposer_prompt_path = "../../prompts/skillpatch/boundary_aware_patch_induction/boundary_test_proposer.md"
+
+[boundary_aware.stage3]
+consolidation_prompt_path = "../../prompts/skillpatch/boundary_aware_patch_induction/patch_consolidation.md"

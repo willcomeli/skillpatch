@@ -176,7 +176,10 @@ def create_runner(config, output, environment):
     return adapter.create_runner(config, output, client)
 
 
-def run_native(config, output: Path, environment, *, prepare_only=False, patch_skill_dir=None):
+def run_native(config, output: Path, environment, *, prepare_only=False, patch_skill_dir=None,
+               skip_model_budget_errors=False):
+    if skip_model_budget_errors and config.benchmark != 'scienceworld':
+        raise ValueError('--skip-model-budget-errors is available only for ScienceWorld')
     output = output.expanduser().resolve()
     output.mkdir(parents=True, exist_ok=False, mode=0o700)
     secrets = secret_values(environment)
@@ -185,6 +188,8 @@ def run_native(config, output: Path, environment, *, prepare_only=False, patch_s
         secrets = tuple(set(secrets) | {key})
     state = {'benchmark': config.benchmark, 'run_id': output.name, 'status': 'preparing',
              'started_at': now(), 'task_results': [], 'errors': []}
+    if skip_model_budget_errors:
+        state['skipped_tasks'] = []
     runner = None
     try:
         tasks = json.loads(config.tasks_path.read_text(encoding='utf-8'))
@@ -218,10 +223,13 @@ def run_native(config, output: Path, environment, *, prepare_only=False, patch_s
             checked = PatchedSkillBank(bank, selected)
             checked.format_for_prompt({})
         write_json(output / 'config.json', redact(config.__dict__, secrets))
-        write_json(output / 'plan.json', {'benchmark': config.benchmark, 'task_count': len(tasks),
-                                         'runner_options': redact(options, secrets),
-                                         'patch_skill_dir': selected, 'skill_path': skill_path,
-                                         'model_request_timeout_sec': config.timeout_sec})
+        plan = {'benchmark': config.benchmark, 'task_count': len(tasks),
+                'runner_options': redact(options, secrets),
+                'patch_skill_dir': selected, 'skill_path': skill_path,
+                'model_request_timeout_sec': config.timeout_sec}
+        if skip_model_budget_errors:
+            plan['skip_model_budget_errors'] = True
+        write_json(output / 'plan.json', plan)
         if prepare_only:
             state['status'] = 'prepared'
         else:
@@ -230,12 +238,21 @@ def run_native(config, output: Path, environment, *, prepare_only=False, patch_s
             write_json(output / 'result.json', state)
             for index, task in enumerate(tasks, 1):
                 kwargs = {'patch_skill_dir': selected} if selected is not None else {}
-                row = runner.run_task(task, bank, **kwargs)
-                path = output / 'tasks' / f'task_{index:06d}.json'
-                write_json(path, redact(row, secrets))
-                state['task_results'].append(str(path))
+                try:
+                    row = runner.run_task(task, bank, **kwargs)
+                except ModelActionBudgetExceeded as error:
+                    if not skip_model_budget_errors:
+                        raise
+                    state['skipped_tasks'].append(redact({
+                        'input_index': index, 'task': task,
+                        'error': f'{type(error).__name__}: {error}',
+                    }, secrets))
+                else:
+                    path = output / 'tasks' / f'task_{index:06d}.json'
+                    write_json(path, redact(row, secrets))
+                    state['task_results'].append(str(path))
                 write_json(output / 'result.json', state)
-            state['status'] = 'completed'
+            state['status'] = 'completed_with_skips' if state.get('skipped_tasks') else 'completed'
     except KeyboardInterrupt:
         state['status'] = 'cancelled'
     except Exception as error:
@@ -251,7 +268,7 @@ def run_native(config, output: Path, environment, *, prepare_only=False, patch_s
                 runner.close()
             except Exception as error:
                 state['errors'].append(redact(f'Cleanup failed: {error}', secrets))
-                if state['status'] == 'completed':
+                if state['status'] in {'completed', 'completed_with_skips'}:
                     state['status'] = 'backend_error'
         state['finished_at'] = now()
         try:

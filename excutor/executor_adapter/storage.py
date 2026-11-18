@@ -33,6 +33,13 @@ def write_json(path: Path, value: Any) -> None:
     os.replace(temporary, path)
 
 
+def json_digest(value: Any) -> str:
+    """Hash a JSON value independently of its indentation and key order."""
+    encoded = json.dumps(value, ensure_ascii=False, sort_keys=True,
+                         separators=(",", ":"), allow_nan=False).encode("utf-8")
+    return "sha256:" + hashlib.sha256(encoded).hexdigest()
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:

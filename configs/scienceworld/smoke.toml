@@ -1,0 +1,23 @@
+[task]
+benchmark = "scienceworld"
+path = "smoke_tasks.json"
+skill_mode = "with-skill"
+skill_path = "../../method/eviskill/skills/scienceworld_initial.md"
+
+[agent]
+name = "native"
+model_env = "EXECUTION_MODEL"
+api_key_env = "EXECUTION_API_KEY"
+base_url_env = "EXECUTION_BASE_URL"
+
+[runtime]
+backend = "eviskill"
+timeout_sec = 300
+
+[runtime.runner_options]
+remote_environment_url = ""
+auto_server = true
+max_steps = 100
+
+[output]
+root = "../../runs/scienceworld"

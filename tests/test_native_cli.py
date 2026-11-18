@@ -2,6 +2,8 @@
 
 import io
 import json
+import os
+import subprocess
 import tempfile
 import unittest
 from contextlib import redirect_stdout
@@ -63,6 +65,34 @@ class NativeCliTests(unittest.TestCase):
                     self.assertEqual(state['status'], 'prepared')
                     self.assertEqual(bool(plan['patch_skill_dir']), patched)
                     self.assertEqual((output / 'input/SKILL.md').read_text(), 'Check dates.')
+
+    def test_prepare_can_override_task_manifest(self):
+        config = self.config('scienceworld')
+        selected = self.root / 'val.json'
+        selected.write_text('[{"task_id":"val_1"},{"task_id":"val_2"}]')
+        output = self.root / 'validation-prepared'
+        self.assertEqual(self.invoke(config, output, ['--task-manifest', str(selected)]), 0)
+        self.assertEqual(json.loads((output / 'plan.json').read_text())['task_count'], 2)
+        self.assertEqual(load_native_config(config).tasks_path, self.root / 'tasks.json')
+
+    def test_scienceworld_shell_supports_existing_and_new_experiment_commands(self):
+        script = Path(__file__).resolve().parents[1] / 'scripts/scienceworld/run.sh'
+        stub = self.root / 'python-stub'
+        stub.write_text('#!/bin/sh\nprintf "%s\\n" "$@" > "$CAPTURE_ARGS"\n')
+        stub.chmod(0o700)
+        cases = [
+            ('legacy', ['--output', str(self.root / 'legacy'), '--prepare-only'],
+             ['-u', '-m', 'scripts.scienceworld.experiment']),
+            ('new', [str(self.root / 'new'), '--method', 'vanilla'],
+             ['-Bu', '-m', 'set_up.cli', 'scienceworld', 'evaluate']),
+        ]
+        for name, arguments, expected in cases:
+            with self.subTest(entry=name):
+                capture = self.root / (name + '-arguments.txt')
+                result = subprocess.run(['bash', str(script), *arguments], capture_output=True, text=True,
+                    env={**os.environ, 'SKILLPATCH_PYTHON': str(stub), 'CAPTURE_ARGS': str(capture)})
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(capture.read_text().splitlines()[:len(expected)], expected)
 
     def test_factory_chooses_matching_runner_and_agent(self):
         for benchmark in ('alfworld', 'scienceworld', 'appworld'):

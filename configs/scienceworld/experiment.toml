@@ -1,0 +1,10 @@
+[execution]
+config = "execution.toml"
+env_file = "scienceworld.env"
+action_prompt = "../../prompts/execution/scienceworld_action.md"
+train_manifest = "../../data/scienceworld/train/items.json"
+test_manifest = "../../data/scienceworld/test/items.json"
+
+[evolution]
+config = "evolution.toml"
+env_file = "scienceworld_evolve.env"

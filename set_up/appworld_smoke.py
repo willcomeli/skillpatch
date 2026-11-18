@@ -43,7 +43,7 @@ def prepare_method_configs(inputs, *, profile='smoke', optimizer=None):
     write_json(optimizer_path, optimizer.metadata())
     diagnosis = load_discovery_config(ROOT / 'configs/skillpatch-stage1.toml')
     stage2 = load_stage2_config(ROOT / 'configs/skillpatch-stage2.toml')
-    generation = load_discovery_config(stage2.generation_config)
+    generation = stage2.agent_config()
 
     def pin(config, name):
         model = optimizer.model if optimizer.harness == 'codex' else 'openai/' + optimizer.model
@@ -368,8 +368,7 @@ def run_smoke(manifest_path, output, environment, *, methods=METHODS, dev_limit=
     return state
 
 
-def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
+def configure_parser(parser):
     parser.add_argument('--trajectory-manifest', type=Path, required=True)
     parser.add_argument('--output', type=Path)
     parser.add_argument('--env-file', type=Path, default=ROOT / '.env')
@@ -378,7 +377,10 @@ def main(argv=None):
     parser.add_argument('--dev-limit', type=int, default=1)
     parser.add_argument('--max-output-tokens', type=int, default=32768)
     parser.add_argument('--prepare-only', action='store_true')
-    args = parser.parse_args(argv)
+    parser.set_defaults(handler=run_command)
+
+
+def run_command(args):
     environment = {}
     try:
         environment = load_environment(args.env_file)
@@ -395,6 +397,12 @@ def main(argv=None):
     except (OSError, ValueError) as error:
         print(redact(f'error: {error}', secret_values(environment)), flush=True)
         return 2
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    configure_parser(parser)
+    return run_command(parser.parse_args(argv))
 
 
 if __name__ == '__main__':

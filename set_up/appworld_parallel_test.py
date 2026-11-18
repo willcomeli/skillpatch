@@ -111,12 +111,14 @@ def evaluate_variant(recovery, name, port, environment):
         return state
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+def configure_parser(parser):
     parser.add_argument('--recovery', type=Path, required=True)
     parser.add_argument('--env-file', type=Path, default=ROOT / '.env')
     parser.add_argument('--variants', nargs='+', choices=('initial', 'trace2skill'), default=['initial', 'trace2skill'])
-    args = parser.parse_args()
+    parser.set_defaults(handler=run_command)
+
+
+def run_command(args):
     environment = load_environment(args.env_file)
     with ThreadPoolExecutor(max_workers=2) as pool:
         jobs = {name: pool.submit(evaluate_variant, args.recovery, name, port, environment)
@@ -124,6 +126,12 @@ def main():
         results = {name: future.result() for name, future in jobs.items()}
     write_json(args.recovery / ('test/parallel_result-' + '-'.join(args.variants) + '.json'), results)
     return 0 if all(result['status'] == 'completed' for result in results.values()) else 2
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    configure_parser(parser)
+    return run_command(parser.parse_args(argv))
 
 
 if __name__ == '__main__':

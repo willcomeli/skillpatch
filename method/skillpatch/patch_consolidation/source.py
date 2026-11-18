@@ -1,45 +1,8 @@
 """Recheck generated patches and bind exact archived targets without a registry."""
-import hashlib
-import json
-from pathlib import Path, PurePosixPath
-from dataclasses import replace
-from excutor.executor_adapter.storage import jsonable
-from method.skillpatch.patch_generation.source import load_source, read_json
-from method.skillpatch.patch_generation.patches import validate_generation
-from method.skillpatch.patch_generation.models import FindingIssue
+from pathlib import PurePosixPath
 
-
-def _digest(value):
-    return 'sha256:' + hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False,
-        separators=(',', ':'), allow_nan=False).encode()).hexdigest()
-
-
-def load_patch(path: Path):
-    path = path.expanduser().resolve(strict=True)
-    episode = path.parent.parent
-    if path != episode / 'generation/patch.json':
-        raise ValueError('Expected a patch_generation output at generation/patch.json')
-    state = read_json(episode / 'result.json')
-    if state.get('status') != 'generated':
-        raise ValueError('Patch generation episode did not finish successfully')
-    provenance = read_json(episode / 'source.json')
-    source = load_source(Path(provenance['diagnosis_dir']), state['issue_id'])
-    if provenance['input_digest'] != source.context.input_digest or provenance['issue'] != jsonable(source.conflict):
-        raise ValueError('Patch source no longer matches its diagnosis archive')
-    raw = read_json(path)
-    revision = raw.get('revision')
-    if type(revision) is not int or revision < 0:
-        raise ValueError('Invalid patch revision')
-    response = read_json(episode / 'generation/response.json')
-    patch = validate_generation(response, source, revision)
-    if patch is None or jsonable(patch) != raw:
-        raise ValueError('Patch differs from its source-bound generation response')
-    record = read_json(episode / 'generation/generation.json')
-    if record.get('patch') != raw or record.get('source_digest') != source.context.input_digest:
-        raise ValueError('Patch generation record differs from its patch or context')
-    if isinstance(source.conflict, FindingIssue):
-        source.conflict = replace(source.conflict, target=patch.target)
-    return patch, source, episode
+from excutor.executor_adapter.storage import json_digest
+from method.skillpatch.patch_generation.source import load_patch  # compatibility for existing experiment callers
 
 
 def bind_target(patch, source, skill_key):
@@ -76,7 +39,7 @@ def bind_target(patch, source, skill_key):
     if target.quote not in item.text:
         raise ValueError('Target anchor is absent from its archived Skill text')
     binding = {'skill_key': skill_key, 'relative_path': local, 'scope': target.scope,
-               'quote': target.quote, 'target_text_digest': _digest(item.text),
-               'declaration_text_digest': _digest(declaration.text)}
-    return {**binding, 'target_id': _digest(binding),
+               'quote': target.quote, 'target_text_digest': json_digest(item.text),
+               'declaration_text_digest': json_digest(declaration.text)}
+    return {**binding, 'target_id': json_digest(binding),
             'binding_scope': 'exact_archived_text_and_anchor; not_full_skill_pack'}

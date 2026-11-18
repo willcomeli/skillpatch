@@ -7,13 +7,13 @@ from pathlib import Path
 from uuid import uuid4
 
 from excutor.executor_adapter.storage import now, sha256_file, tree_hashes, write_json
-from set_up.appworld_experiments import issue_ids
 from set_up.appworld_trajectories import load_manifest
 from set_up.environment import load_environment, redact, secret_values
 from method.skillpatch.patch_diagnosis.config import load_discovery_config
 from method.skillpatch.patch_diagnosis.discovery import run_discovery
 from method.skillpatch.patch_generation.config import Stage2Config
 from method.skillpatch.patch_generation.pipeline import run_stage2
+from method.skillpatch.patch_generation.source import load_diagnosis
 from method.skillpatch.patch_validation.appworld_patch_validation.pipeline import run_validation
 
 
@@ -70,7 +70,8 @@ def resume(source, output, environment):
             if result['status'] not in allowed:
                 raise ValueError('Stage failed: ' + str(result.get('error', result['status'])))
         diagnosis_config = load_discovery_config(source / 'inputs/diagnosis/agent.toml')
-        stage2 = Stage2Config(source / 'inputs/generation/agent.toml')
+        generation_path = source / 'inputs/generation/agent.toml'
+        stage2 = Stage2Config(generation_path, load_discovery_config(generation_path))
         save()
         try:
             for task in state['tasks']:
@@ -88,7 +89,8 @@ def resume(source, output, environment):
                     save()
                     require(result, {'completed'})
                 diagnosis_dir = Path(task['diagnosis']['path'])
-                ids = issue_ids(diagnosis_dir)
+                archive = load_diagnosis(diagnosis_dir)
+                ids = archive.issue_ids
                 task['reported_issue_count'] = len(ids)
                 for identifier in ids:
                     issue = next((i for i in task['issues'] if i['issue_id'] == identifier), None)
@@ -100,7 +102,7 @@ def resume(source, output, environment):
                     if issue.get('generation_status') != 'generated':
                         state['phase'] = 'generation'
                         destination = task_dir / identifier / ('generation-' + uuid4().hex)
-                        result = run_stage2(diagnosis_dir, identifier, stage2, destination, environment, progress=print)
+                        result = run_stage2(archive, identifier, stage2, destination, environment, progress=print)
                         issue.update(generation=str(destination), generation_status=result['status'])
                         if result['status'] == 'generated':
                             issue['patch_path'] = result['patch_path']
