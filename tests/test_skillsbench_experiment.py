@@ -54,6 +54,101 @@ class SkillsBenchExperimentTests(unittest.TestCase):
         return exp.replace(exp.request_for(self.tasks / name, self.cfg, self.native),
                            skills_dir=self.tasks / name / 'environment/skills')
 
+    def additional_fixture(self, *, events=0, feedback='unavailable', prompt=''):
+        output = self.root / 'run'
+        source = output / 'previous/one'
+        (source / 'backend').mkdir(parents=True)
+        exp.write_json(source / 'result.json', {'status': 'agent_error',
+            'execution': {'trajectory_events': events}, 'feedback': {'status': feedback}})
+        (source / 'backend/stderr.log').write_text(prompt)
+        policy = {'output_subdirectory': 'additional', 'tasks': [{'name': 'one',
+            'failure_source': str(source), 'failure_result_sha256': exp.sha256_file(source / 'result.json'),
+            'reason': 'approved preparation correction'}]}
+        state = {'baselines': {'one': {'status': 'failed'}}, 'methods': {}}
+        return output, policy, state
+
+    def test_additional_preparation_never_replays_agent_execution_or_scoring(self):
+        for events, feedback, prompt in ((1, 'unavailable', ''), (0, 'available', ''),
+                                         (0, 'unavailable', 'Prompt 1/1: task')):
+            with self.subTest(events=events, feedback=feedback, prompt=prompt):
+                output, policy, state = self.additional_fixture(events=events, feedback=feedback, prompt=prompt)
+                with patch.object(exp, '_batch_results', side_effect=AssertionError('must not execute')):
+                    with self.assertRaisesRegex(ValueError, 'replay Agent'):
+                        exp.additional_preparation_recovery(policy, state, {'one': self.request()},
+                            output, {}, 1, (), lambda: None)
+                import shutil
+                shutil.rmtree(output)
+
+    def test_additional_preparation_is_checkpointed_without_duplicate_model_calls(self):
+        output, policy, state = self.additional_fixture()
+        calls = []
+
+        def worker(name, request, folder, environment, prepare_only):
+            calls.append(name)
+            folder.mkdir(parents=True)
+            exp.write_json(folder / 'result.json', {'status': 'completed'})
+            return {'status': 'completed', 'source': str(folder), 'hashes': exp.tree_hashes(folder)}
+
+        with patch.object(exp, '_baseline_job', side_effect=worker):
+            exp.additional_preparation_recovery(policy, state, {'one': self.request()},
+                output, {}, 1, (), lambda: None)
+            exp.additional_preparation_recovery(policy, state, {'one': self.request()},
+                output, {}, 1, (), lambda: None)
+        self.assertEqual(calls, ['one'])
+        self.assertEqual(state['baselines']['one']['status'], 'completed')
+        (output / 'additional/one/result.json').write_text('changed')
+        with self.assertRaisesRegex(ValueError, 'archive changed'):
+            exp.additional_preparation_recovery(policy, state, {'one': self.request()},
+                output, {}, 1, (), lambda: None)
+
+    def test_additional_preparation_adopts_a_completed_archive_after_lost_response(self):
+        output, policy, state = self.additional_fixture()
+        folder = output / 'additional/one'
+        folder.mkdir(parents=True)
+        exp.write_json(folder / 'result.json', {'status': 'completed'})
+        with patch.object(exp, 'load_archive', return_value=SimpleNamespace(task_id='one')) as load, \
+                patch.object(exp, '_batch_results', return_value=iter(())):
+            exp.additional_preparation_recovery(policy, state, {'one': self.request()},
+                output, {}, 1, (), lambda: None)
+        load.assert_called_once_with(folder.resolve())
+        self.assertEqual(state['baselines']['one']['source'], str(folder.resolve()))
+
+    def test_additional_preparation_cannot_change_references_after_methods_start(self):
+        output, policy, state = self.additional_fixture()
+        state['methods']['skillopt/two'] = {'status': 'completed'}
+        with self.assertRaisesRegex(ValueError, 'before method optimization'):
+            exp.additional_preparation_recovery(policy, state, {'one': self.request()},
+                output, {}, 1, (), lambda: None)
+
+    def test_scored_archive_registration_repair_does_not_reexecute_the_task(self):
+        output = self.root / 'repair-run'
+        folder = output / 'preparation_recovery/one'
+        exp.write_json(folder / 'result.json', {'status': 'completed'})
+        state = {'baselines': {'one': {'status': 'failed', 'error': 'old reader error'}},
+                 'methods': {'skillopt/one': {'status': 'blocked'}}}
+        archive = SimpleNamespace(task_id='one', benchmark='skillsbench', score=1)
+        with patch.object(exp, 'load_archive', return_value=archive), \
+                patch.object(exp, '_baseline_job', side_effect=AssertionError('must not execute')):
+            repaired = exp.adopt_completed_references(state, {'one': self.request()}, output)
+            self.assertEqual(exp.adopt_completed_references(state, {'one': self.request()}, output), {})
+        self.assertEqual(repaired['one']['score'], 1)
+        self.assertEqual(state['baselines']['one']['status'], 'completed')
+        self.assertEqual(state['baselines']['one']['previous_reference_error'], 'old reader error')
+        self.assertNotIn('skillopt/one', state['methods'])
+
+    def test_registration_repair_preserves_invalid_archives_and_used_references(self):
+        output = self.root / 'invalid-repair'
+        exp.write_json(output / 'preparation_recovery/one/result.json', {'status': 'completed'})
+        state = {'baselines': {'one': {'status': 'failed'}}, 'methods': {}}
+        with patch.object(exp, 'load_archive', side_effect=ValueError('invalid archive')):
+            self.assertEqual(exp.adopt_completed_references(state, {'one': self.request()}, output), {})
+        self.assertEqual(state['baselines']['one']['status'], 'failed')
+        state['methods']['skillopt/one'] = {'status': 'completed'}
+        with patch.object(exp, 'load_archive', return_value=SimpleNamespace(
+                task_id='one', benchmark='skillsbench', score=1)):
+            with self.assertRaisesRegex(ValueError, 'already used'):
+                exp.adopt_completed_references(state, {'one': self.request()}, output)
+
     def test_v1_1_environment_build_budget_is_preserved(self):
         path = self.tasks / 'one/task.md'
         path.write_text('---\nagent:\n  timeout_sec: 900\nverifier:\n  timeout_sec: 900\nenvironment:\n  build_timeout_sec: 600\nsandbox:\n  build_timeout_sec: 1800\n---\nSolve it.\n')
@@ -139,6 +234,31 @@ class SkillsBenchExperimentTests(unittest.TestCase):
         self.assertEqual(exp.metadata(task)['verifier']['timeout_sec'], 919)
         self.assertEqual((task / 'task.md').read_bytes(), before)
 
+    def test_step_retry_upgrade_reuses_scored_archives_but_rejects_changed_task_budget(self):
+        source = self.root / 'previous'
+        archive = source / 'baseline/one'
+        archive.mkdir(parents=True)
+        request = self.request()
+        native = exp.jsonable(request)
+        exp.write_json(archive / 'request.json', native)
+        exp.write_json(archive / 'result.json', {'status': 'completed', 'prepared': {'file_hashes': {'task.md': 'task'}}})
+        before = {'executor': 'benchflow', 'execution_model': 'execution', 'execution_base_url': 'endpoint',
+                  'config_sha256': 'before', 'implementation_hashes': {'excutor': {}, 'prompts': {}, 'method': {'unused': 'old'}},
+                  'task_hashes': {'one': {'task.md': 'task'}}}
+        after = {**before, 'config_sha256': 'after',
+                 'implementation_hashes': {'excutor': {}, 'prompts': {}, 'method': {'unused': 'new'}}}
+        state = {'status': 'cancelled', 'baselines': {'one': {'status': 'completed', 'source': str(archive),
+                                                          'hashes': exp.tree_hashes(archive)}}}
+        exp.write_json(source / 'plan.json', before)
+        exp.write_json(source / 'result.json', state)
+        requests = {'one': exp.replace(request, bench_command=(*request.bench_command, '--step-retries'))}
+        with patch.object(exp, 'load_archive', return_value=SimpleNamespace(task_id='one', score=1, success=True)):
+            reused = exp._reused_baselines(source, after, requests, step_retry_upgrade=True)
+        self.assertEqual(reused['one']['official_score'], 1)
+        requests['one'] = exp.replace(requests['one'], sandbox_setup_timeout=999)
+        with self.assertRaisesRegex(ValueError, 'execution settings changed'):
+            exp._reused_baselines(source, after, requests, step_retry_upgrade=True)
+
     def test_installer_proxy_preserves_original_command(self):
         from scripts.skillsbench.bench import install_command
         original = "uv tool install --from 'git+https://github.com/OpenHands/OpenHands-CLI.git@pinned' openhands"
@@ -162,6 +282,16 @@ class SkillsBenchExperimentTests(unittest.TestCase):
         self.assertEqual(resolve_execution_environment(original, 'openhands', 'openai/execution', explicit, environment), explicit)
         self.assertEqual(resolve_execution_environment(original, 'oracle', 'openai/execution', None, environment), {})
         self.assertEqual(resolve_execution_environment(original, 'openhands', 'openai/execution', None, {'BENCHFLOW_PROVIDER_BASE_URL': 'https://gateway.invalid/v1'}), {})
+
+    def test_registry_auth_uses_host_proxy_without_overriding_explicit_environment(self):
+        from scripts.skillsbench.bench import host_proxy_environment
+        original = {'METHOD_BASE_URL': 'https://method.invalid/v1', 'HTTPS_PROXY': 'http://explicit:1234'}
+        result = host_proxy_environment('http://host.docker.internal:7897', original)
+        self.assertEqual(result['HTTPS_PROXY'], original['HTTPS_PROXY'])
+        self.assertEqual(result['http_proxy'], 'http://127.0.0.1:7897')
+        self.assertEqual(result['METHOD_BASE_URL'], original['METHOD_BASE_URL'])
+        self.assertNotIn('http_proxy', original)
+        self.assertEqual(host_proxy_environment('http://172.17.0.1:17899', original), original)
 
     def test_installer_network_options_preserve_package_pins(self):
         from scripts.skillsbench.bench import install_command
@@ -262,23 +392,31 @@ class SkillsBenchExperimentTests(unittest.TestCase):
         cfg = {**self.cfg, 'optimizer_config': 'optimizer.toml', 'skillopt_config': 'skillopt.yaml'}
         self.optimizer.metadata = lambda: {'model': 'optimizer'}
         def execute(request, output, environment, **kwargs):
+            if marker_path:
+                marker_path.write_text('{}')
             if request.task_dir.name == 'one':
                 raise ValueError('task timed out')
             output.mkdir(parents=True)
             exp.write_json(output / 'result.json', {'prepared': {'task_dir': request.task_dir,
                            'skills_dir': request.task_dir / 'environment/skills'}})
             return output
-        with patch.object(exp, 'ROOT', self.root), \
-             patch.object(exp, 'load_settings', return_value=(cfg, sorted(self.tasks.iterdir()), self.native, self.optimizer, {})), \
-             patch.object(exp, 'execute', side_effect=execute), \
-             patch.object(exp, 'optimize_pack') as pack, patch.object(exp, 'optimize_skillpatch') as skillpatch:
-            state = exp.run(config, self.root / 'run', {}, baseline_only=True)
-        self.assertEqual(state['phase'], 'baseline_finished')
-        self.assertEqual(state['status'], 'completed_with_errors')
-        self.assertEqual(len(state['baselines']), 2)
-        self.assertEqual(state['methods'], {})
-        pack.assert_not_called()
-        skillpatch.assert_not_called()
+        for index, marker in enumerate((None, 'BASELINE_ONLY_REQUESTED.json',
+                'ENERGY_PRECACHE_COLLECTION_REQUESTED.json', 'SEISMIC_COMPAT_COLLECTION_REQUESTED.json',
+                'LATEX_HF_COLLECTION_REQUESTED.json')):
+            with self.subTest(marker=marker):
+                output = self.root / f'run-{index}'
+                marker_path = output / marker if marker else None
+                with patch.object(exp, 'ROOT', self.root), \
+                     patch.object(exp, 'load_settings', return_value=(cfg, sorted(self.tasks.iterdir()), self.native, self.optimizer, {})), \
+                     patch.object(exp, 'execute', side_effect=execute), \
+                     patch.object(exp, 'optimize_pack') as pack, patch.object(exp, 'optimize_skillpatch') as skillpatch:
+                    state = exp.run(config, output, {}, baseline_only=marker is None)
+                self.assertEqual(state['phase'], 'baseline_finished')
+                self.assertEqual(state['status'], 'completed_with_errors')
+                self.assertEqual(len(state['baselines']), 2)
+                self.assertEqual(state['methods'], {})
+                pack.assert_not_called()
+                skillpatch.assert_not_called()
 
     def test_collects_entire_batch_before_any_method(self):
         for name in ('method', 'method_input_adapters', 'excutor', 'prompts'):

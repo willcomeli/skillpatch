@@ -8,7 +8,7 @@ from pathlib import Path
 def main(argv=None):
     parser = argparse.ArgumentParser(prog='method-input-adapters')
     commands = parser.add_subparsers(dest='command', required=True)
-    for name in ('skillopt-export', 'trace2skill-export'):
+    for name in ('skillopt-export', 'trace2skill-export', 'evoskill-export'):
         sub = commands.add_parser(name)
         sub.add_argument('sources', nargs='+', type=Path)
         sub.add_argument('--output', required=True, type=Path)
@@ -34,6 +34,8 @@ def main(argv=None):
     if args.command.endswith('-export'):
         if args.command == 'skillopt-export':
             from .skillopt.results import export_results
+        elif args.command == 'evoskill-export':
+            from .evoskill.results import export_results
         else:
             from .trace2skill.results import export_results
         rows = export_results(args.sources, args.output)

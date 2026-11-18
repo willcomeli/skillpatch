@@ -1,15 +1,18 @@
 # 方法输入适配层
 
-共享 SkillsBench、ALFWorld、ScienceWorld、AppWorld 执行器；保留原始执行输出，分别转换为各个方法的输入。本目录包含 SkillPatch、SkillOpt 和 Trace2Skill 的适配层。
+共享 SkillsBench、ALFWorld、ScienceWorld、AppWorld 执行器；保留原始执行输出，分别转换为各个方法的输入。本目录包含 SkillPatch、SkillOpt、Trace2Skill 和 EvoSkill 的适配层。
 
 ```text
 method_input_adapters/
 ├── skillpatch/    # 输出 DiagnosisContext
 ├── skillopt/      # 输出评分字典及 conversation.json，接入原始训练器
-└── trace2skill/   # 输出完整日志，接入原始分析和演化流程
+├── trace2skill/   # 输出完整日志，接入原始分析和演化流程
+└── evoskill/      # 原生 AgentTrace / scorer，接入原始自演化循环
 ```
 
 SkillPatch 的公共调用入口为 `from method_input_adapters.skillpatch import build_diagnosis_context`。
+
+EvoSkill 的入口、离线轨迹转换与原生循环接线示例见 [EvoSkill 适配器](evoskill/README.md)。
 
 ## 安装与命令
 

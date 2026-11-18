@@ -5,7 +5,7 @@ scripts.skillsbench.experiment. All custom wiring lives in this script.
 """
 
 import argparse
-from contextlib import redirect_stderr, redirect_stdout
+from contextlib import nullcontext, redirect_stderr, redirect_stdout
 from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 import multiprocessing
 from dataclasses import replace
@@ -24,7 +24,7 @@ from excutor.executor_adapter.registry import get_execution_adapter
 from excutor.executor_adapter.storage import hash_manifest, jsonable, now, sha256_file, tree_hashes, write_json
 from excutor.excutor_runners.benchflow import BenchFlowBackend
 from excutor.excutors import Executor
-from method_input_adapters.archive import load_archive
+from method_input_adapters.archive import is_scored_agent_timeout, load_archive
 from set_up.environment import load_environment, redact, secret_values
 from set_up.optimizer_config import resolve_optimizer
 
@@ -102,7 +102,9 @@ def execute(request, output, environment, *, prepare_only=False):
         request, output, environment, prepare_only=prepare_only, expected_skill_digest=digest)
     if result.status == 'cancelled':
         raise KeyboardInterrupt
-    if result.status != ('prepared' if prepare_only else 'completed'):
+    scored_timeout = (not prepare_only and result.status == 'timeout'
+                      and is_scored_agent_timeout(read(output / 'result.json')))
+    if result.status != ('prepared' if prepare_only else 'completed') and not scored_timeout:
         raise ValueError(f'Execution {result.status}: {output / "result.json"}')
     if not prepare_only:
         archive = load_archive(output)
@@ -324,8 +326,132 @@ def _batch_results(worker, jobs, concurrency, secrets):
 def _baseline_job(name, request, folder, environment, prepare_only):
     print(f'[baseline] {name}', flush=True)
     execute(request, folder, environment, prepare_only=prepare_only)
-    return {'status': 'prepared' if prepare_only else 'completed',
-            'source': str(folder), 'hashes': tree_hashes(folder)}
+    record = {'status': 'prepared' if prepare_only else 'completed',
+              'source': str(folder), 'hashes': tree_hashes(folder)}
+    if not prepare_only:
+        record['execution_status'] = read(folder / 'result.json').get('status', 'completed')
+    return record
+
+
+def adopt_completed_references(state, requests, output):
+    """Recover valid, already-scored archives without any model execution."""
+    output = Path(output).resolve()
+    from scripts.skillsbench.reference_updates import adopt
+    adopted = adopt(state, requests, output)
+    for name in requests:
+        old = state['baselines'][name]
+        if old['status'] == 'completed':
+            continue
+        for base in ('preparation_recovery', 'baseline'):
+            folder = (output / base / name).resolve()
+            if not folder.is_relative_to(output) or not (folder / 'result.json').is_file():
+                continue
+            try:
+                archive = load_archive(folder)
+            except (ValueError, OSError, KeyError, TypeError):
+                continue
+            if archive.benchmark != 'skillsbench' or archive.task_id != name:
+                continue
+            matching = [key for key in state['methods'] if key.rsplit('/', 1)[-1] == name]
+            if any(state['methods'][key]['status'] != 'blocked' for key in matching):
+                raise ValueError('Cannot replace a reference already used by a method')
+            record = {**old, 'status': 'completed', 'source': str(folder), 'hashes': tree_hashes(folder),
+                'execution_status': read(folder / 'result.json')['status'],
+                'archive_adopted_without_execution': True}
+            if 'error' in record:
+                record['previous_reference_error'] = record.pop('error')
+            state['baselines'][name] = record
+            for key in matching:
+                del state['methods'][key]
+            adopted[name] = {'source': str(folder), 'score': archive.score,
+                             'previous_reference_error': old.get('error')}
+            break
+    if adopted:
+        path = output / 'reference_registry_repairs.json'
+        audit = read(path) if path.exists() else {'records': {}}
+        audit['records'].update(adopted)
+        audit['updated_at'] = now()
+        write_json(path, audit)
+    return adopted
+
+
+def additional_preparation_recovery(policy, state, requests, output, environment,
+                                    concurrency, secrets, save):
+    """Apply approved preparation corrections before starting any method.
+
+    Only failed archives with no Agent execution qualify. A completed output
+    can be adopted after a lost coordinator response; partial outputs are
+    never silently replayed.
+    """
+    if not policy:
+        return
+    output = Path(output).resolve()
+    base = (output / policy['output_subdirectory']).resolve()
+    if base == output or not base.is_relative_to(output):
+        raise ValueError('Additional preparation output must stay inside this run')
+    progress_path = output / 'additional_preparation_recovery_progress.json'
+    progress = read(progress_path) if progress_path.exists() else {
+        'started_at': now(), 'active': [], 'finished': {}}
+    jobs, sources, seen = [], {}, set()
+    for target in policy['tasks']:
+        name = target['name']
+        if name in seen or name not in requests:
+            raise ValueError('Unknown or duplicate additional preparation task')
+        seen.add(name)
+        if name in progress['finished']:
+            record = progress['finished'][name]
+            if record['status'] == 'completed' and tree_hashes(Path(record['source'])) != record['hashes']:
+                raise ValueError('Completed additional preparation archive changed')
+            state['baselines'][name] = record
+            continue
+        if state['baselines'][name]['status'] == 'completed':
+            progress['finished'][name] = state['baselines'][name]
+            continue
+        if state['methods']:
+            raise ValueError('Additional reference preparation must finish before method optimization')
+        source = Path(target['failure_source']).resolve()
+        if (not source.is_relative_to(output) or source.name != name
+                or sha256_file(source / 'result.json') != target['failure_result_sha256']):
+            raise ValueError('Approved preparation failure source changed')
+        raw = read(source / 'result.json')
+        log = source / 'backend/stderr.log'
+        if (raw['execution']['trajectory_events'] != 0 or raw['feedback']['status'] != 'unavailable'
+                or (log.exists() and 'Prompt 1/1' in log.read_text(errors='replace'))):
+            raise ValueError('Additional preparation would replay Agent execution or formal scoring')
+        folder = base / name
+        sources[name] = source
+        if folder.exists():
+            # load_archive enforces canonical feedback/integrity, including
+            # valid officially scored Agent timeouts. No model call is made.
+            archive = load_archive(folder)
+            if archive.task_id != name:
+                raise ValueError('Additional preparation output belongs to another task')
+            progress['finished'][name] = {'status': 'completed', 'source': str(folder),
+                'hashes': tree_hashes(folder), 'execution_status': read(folder / 'result.json')['status'],
+                'previous_preparation_failure': str(source), 'recovery_scope': target['reason']}
+            state['baselines'][name] = progress['finished'][name]
+            continue
+        jobs.append((name, (name, requests[name], folder, environment, False)))
+    if jobs and state['methods']:
+        raise ValueError('Additional reference preparation must finish before method optimization')
+    progress['active'] = [name for name, _ in jobs]
+    write_json(progress_path, progress)
+    if jobs:
+        before = output / 'result.before-additional-preparation-recovery.json'
+        if not before.exists():
+            write_json(before, state)
+        state['phase'] = 'additional_preparation_recovery'
+    save()
+    reasons = {target['name']: target['reason'] for target in policy['tasks']}
+    for name, record in _batch_results(_baseline_job, jobs, concurrency, secrets):
+        record.update(previous_preparation_failure=str(sources[name]), recovery_scope=reasons[name])
+        state['baselines'][name] = record
+        progress['active'].remove(name)
+        progress['finished'][name] = record
+        write_json(progress_path, progress)
+        save()
+    progress['finished_at'] = now()
+    write_json(progress_path, progress)
 
 
 def _method_job(method, name, original, baseline_record, folder, environment, optimizer, skillopt_config):
@@ -341,7 +467,9 @@ def _method_job(method, name, original, baseline_record, folder, environment, op
         folder.mkdir(parents=True, exist_ok=False)
         created = True
         print(f'[{method}] {name}; log: {folder / "run.log"}', flush=True)
-        with (folder / 'run.log').open('w', encoding='utf-8') as log, redirect_stdout(log), redirect_stderr(log):
+        from scripts.skillsbench.step_retries import method_request_retries
+        retries = method_request_retries() if '--step-retries' in original.bench_command else nullcontext()
+        with (folder / 'run.log').open('w', encoding='utf-8') as log, redirect_stdout(log), redirect_stderr(log), retries:
             if method == 'skillpatch':
                 result = optimize_skillpatch(baseline, request, folder, environment, optimizer)
             else:
@@ -355,34 +483,66 @@ def _method_job(method, name, original, baseline_record, folder, environment, op
     return result
 
 
-def _reused_baselines(source, plan, names):
+def _reused_baselines(source, plan, names, *, step_retry_upgrade=False):
     source = Path(source).resolve(strict=True)
     previous_plan = read(source / 'plan.json')
     previous_state = read(source / 'result.json')
     if previous_state['status'] == 'running':
         raise ValueError('Cannot reuse baselines from an active experiment')
-    for key in ('executor', 'execution_model', 'execution_base_url', 'config_sha256', 'implementation_hashes'):
+    keys = ('executor', 'execution_model', 'execution_base_url') if step_retry_upgrade else (
+        'executor', 'execution_model', 'execution_base_url', 'config_sha256', 'implementation_hashes')
+    for key in keys:
         if previous_plan.get(key) != plan.get(key):
             raise ValueError(f'Reference reuse settings differ: {key}')
+    if step_retry_upgrade:
+        # Only baseline trajectories are reused. Methods have not contributed
+        # to these archives. Keep the native executor and prompts identical;
+        # verify the complete per-task execution request below as well.
+        for name in ('excutor', 'prompts'):
+            before = previous_plan['implementation_hashes'].get(name)
+            if before is None or before != plan['implementation_hashes'].get(name):
+                raise ValueError(f'Baseline execution implementation changed: {name}')
     reused = {}
     for name in names:
         record = previous_state.get('baselines', {}).get(name, {})
-        if record.get('status') != 'completed':
+        archive_path = Path(record.get('source') or source / 'baseline' / name)
+        raw_path = archive_path / 'result.json'
+        scored_timeout = step_retry_upgrade and raw_path.is_file() and is_scored_agent_timeout(read(raw_path))
+        if record.get('status') != 'completed' and not scored_timeout:
             continue
         if previous_plan['task_hashes'].get(name) != plan['task_hashes'].get(name):
             raise ValueError(f'Reference source task changed: {name}')
-        if tree_hashes(Path(record['source'])) != record['hashes']:
+        hashes = tree_hashes(archive_path)
+        if record.get('status') == 'completed' and hashes != record['hashes']:
             raise ValueError(f'Reference archive changed: {name}')
+        if step_retry_upgrade:
+            old_request = read(archive_path / 'request.json')
+            new_request = jsonable(names[name])
+            for request in (old_request, new_request):
+                request['bench_command'] = [arg for arg in request['bench_command'] if arg != '--step-retries']
+            if old_request != new_request:
+                raise ValueError(f'Baseline task execution settings changed: {name}')
+            archive = load_archive(archive_path)
+            if archive.task_id != name or read(raw_path)['prepared']['file_hashes'] != previous_plan['task_hashes'][name]:
+                raise ValueError(f'Reused archive does not contain the original source task: {name}')
+            if tree_hashes(archive_path) != hashes:
+                raise ValueError(f'Reference archive changed while checking: {name}')
+            record = {**record, 'status': 'completed', 'source': str(archive_path), 'hashes': hashes,
+                      'execution_status': read(raw_path)['status'], 'official_score': archive.score,
+                      'success': archive.success, 'reuse_policy': 'user-approved step-retry transport upgrade'}
         reused[name] = {**record, 'reused_from': str(source)}
     return reused
 
 
 def run(config_path, output, environment, *, task_names=(), methods=METHODS, prepare_only=False,
-        resume=False, concurrency=1, reuse_baselines_from=None, baseline_only=False):
+        resume=False, concurrency=1, reuse_baselines_from=None, baseline_only=False,
+        reuse_after_step_retry_upgrade=False):
     if type(concurrency) is not int or concurrency < 1:
         raise ValueError('Concurrency must be a positive integer')
     if prepare_only and reuse_baselines_from:
         raise ValueError('Live reference reuse cannot be used with prepare-only')
+    if reuse_after_step_retry_upgrade and not reuse_baselines_from:
+        raise ValueError('Step-retry baseline reuse requires a source experiment')
     cfg, tasks, native, optimizer, environment = load_settings(
         config_path, environment, task_names, require_credentials=not prepare_only)
     output = Path(output).resolve()
@@ -395,13 +555,34 @@ def run(config_path, output, environment, *, task_names=(), methods=METHODS, pre
                         and not p.endswith(('.pyc', '.pyo'))} for name, files in protected.items()}
     plan = {'protocol': 'skillsbench-single-task-v1', 'concurrency': concurrency, 'baseline_only': baseline_only,
             'reuse_baselines_from': str(Path(reuse_baselines_from).resolve()) if reuse_baselines_from else None,
+            'reuse_after_step_retry_upgrade': reuse_after_step_retry_upgrade,
             'exception_policy': 'record task failures and continue; no reference means blocked optimization',
+            'scored_agent_timeout_policy': 'use official verifier score and saved trajectory; preserve original timeout status',
             'orchestrator_sha256': sha256_file(Path(__file__)),
             'bench_wrapper_sha256': sha256_file(ROOT / 'scripts/skillsbench/bench.py') if (ROOT / 'scripts/skillsbench/bench.py').is_file() else None,
+            'step_retry_support_sha256': {name: sha256_file(ROOT / 'scripts/skillsbench' / name)
+                for name in ('retry_policy.py', 'step_retries.py', 'openhands_request_retry.py', 'apt_mirrors.py', 'python_mirrors.py', 'startup_policy.py', 'apt_request_retries.py', 'playwright_request_retries.py', 'method_transport_recovery.py', 'preparation_compat.py', 'rpm_mirrors.py', 'verifier_precache.py', 'hf_request_retries.py', 'verifier_budget.py', 'reference_updates.py', 'agentops_scoring_resume.py', 'agentops_verifier_recovery.py', 'resume_methods.py', 'retry_queue.py', 'skillopt_stage_cache.py', 'verifier_index_routing.py')
+                if (ROOT / 'scripts/skillsbench' / name).is_file()},
+            'verifier_budget_policy': read(output / 'VERIFIER_BUDGET_REQUESTED.json') if (output / 'VERIFIER_BUDGET_REQUESTED.json').is_file() else None,
+            'approved_reference_updates_policy': read(output / 'APPROVED_REFERENCE_UPDATES.json') if (output / 'APPROVED_REFERENCE_UPDATES.json').is_file() else None,
+            'method_transport_recovery_policy': read(output / 'METHOD_TRANSPORT_RECOVERY_REQUESTED.json') if (output / 'METHOD_TRANSPORT_RECOVERY_REQUESTED.json').is_file() else None,
+            'apt_mirror_policy': read(output / 'APT_MIRROR_REQUESTED.json') if (output / 'APT_MIRROR_REQUESTED.json').is_file() else None,
+            'startup_policy': read(output / 'STARTUP_POLICY_REQUESTED.json') if (output / 'STARTUP_POLICY_REQUESTED.json').is_file() else None,
+            'install_policy': read(output / 'INSTALL_POLICY_REQUESTED.json') if (output / 'INSTALL_POLICY_REQUESTED.json').is_file() else None,
+            'additional_preparation_recovery_policy': read(output / 'ADDITIONAL_PREPARATION_RECOVERY_REQUESTED.json') if (output / 'ADDITIONAL_PREPARATION_RECOVERY_REQUESTED.json').is_file() else None,
+            'preparation_compatibility_policy': read(output / 'PREPARATION_COMPATIBILITY_REQUESTED.json') if (output / 'PREPARATION_COMPATIBILITY_REQUESTED.json').is_file() else None,
+            'rpm_mirror_policy': read(output / 'RPM_MIRROR_REQUESTED.json') if (output / 'RPM_MIRROR_REQUESTED.json').is_file() else None,
+            'verifier_precache_policy': read(output / 'VERIFIER_PRECACHE_REQUESTED.json') if (output / 'VERIFIER_PRECACHE_REQUESTED.json').is_file() else None,
+            'verifier_index_policy': read(output / 'VERIFIER_INDEX_REQUESTED.json') if (output / 'VERIFIER_INDEX_REQUESTED.json').is_file() else None,
+            'runtime_python_index_policy': read(output / 'RUNTIME_PYTHON_INDEX_REQUESTED.json') if (output / 'RUNTIME_PYTHON_INDEX_REQUESTED.json').is_file() else None,
+            'step_retry_policy': 'unlimited transient build/install/model-request retries in place; native agent/verifier deadlines unchanged'
+                if '--step-retries' in cfg['bench_command'] else 'backend defaults',
+            'image_registry_routing_sha256': sha256_file(ROOT / 'scripts/skillsbench/image_registry_routing.py'),
+            'image_registry_policy': read(output / 'REGISTRY_MIRROR_REQUESTED.json') if (output / 'REGISTRY_MIRROR_REQUESTED.json').is_file() else None,
             'tasks': [task.name for task in tasks],
             'methods': list(methods), 'executor': 'Executor + SkillsBenchExecutionAdapter + BenchFlowBackend',
             'execution_model': native.model, 'execution_base_url': native.base_url,
-            'optimizer': optimizer.metadata(), 'budget_policy': 'native task.md budgets; no outer/idle/step/token cap',
+            'optimizer': optimizer.metadata(), 'budget_policy': 'native task.md budgets except explicitly approved verifier overrides; no outer/idle/step/token cap',
             'validation_policy': 'original SkillsBench task; not a held-out generalization evaluation',
             'baseline_policy': 'collect all reference rollouts before optimization; one shared source per task',
             'skill_policy': 'independent reference initialization for every task/method/Skill',
@@ -422,8 +603,13 @@ def run(config_path, output, environment, *, task_names=(), methods=METHODS, pre
         write_json(output / 'plan.json', plan)
         state = {'status': 'running', 'phase': 'baseline', 'started_at': now(), 'baselines': {}, 'methods': {}}
         if reuse_baselines_from:
-            state['baselines'] = _reused_baselines(reuse_baselines_from, plan, requests)
+            state['baselines'] = _reused_baselines(reuse_baselines_from, plan, requests,
+                                                 step_retry_upgrade=reuse_after_step_retry_upgrade)
             print(f"Reused {len(state['baselines'])} verified reference archives", flush=True)
+            write_json(output / 'baseline_reuse_audit.json', {
+                'source_plan': read(Path(reuse_baselines_from) / 'plan.json'),
+                'policy': 'step-retry transport upgrade' if reuse_after_step_retry_upgrade else 'identical settings',
+                'records': state['baselines']})
     state.update(status='running', concurrency=concurrency)
     state.pop('finished_at', None)
 
@@ -444,10 +630,21 @@ def run(config_path, output, environment, *, task_names=(), methods=METHODS, pre
             state.update(status='prepared' if all(r['status'] == 'prepared' for r in state['baselines'].values())
                          else 'failed', phase='finished')
             return state
-        if baseline_only or (output / 'BASELINE_ONLY_REQUESTED.json').exists():
+        if (baseline_only or (output / 'BASELINE_ONLY_REQUESTED.json').exists()
+                or any(output.glob('*_COLLECTION_REQUESTED.json'))):
             state.update(status='completed' if all(r['status'] == 'completed' for r in state['baselines'].values())
                          else 'completed_with_errors', phase='baseline_finished', method_stage='awaiting_user')
             return state
+        adopt_completed_references(state, requests, output)
+        save()
+        additional_preparation_recovery(plan['additional_preparation_recovery_policy'], state,
+            requests, output, environment, concurrency, secrets, save)
+        write_json(output / 'trajectory_manifest.json', state['baselines'])
+        state.pop('method_stage', None)
+        from .method_transport_recovery import recover as recover_preparation_methods
+        recover_preparation_methods(state, requests, output, environment, optimizer,
+            Path(config_path).resolve().parent / cfg['skillopt_config'],
+            plan['method_transport_recovery_policy'], secrets, save, concurrency=concurrency)
         for method in methods:
             state['phase'] = method
             jobs = []
@@ -491,6 +688,7 @@ def main(argv=None):
     parser.add_argument('--resume', action='store_true')
     parser.add_argument('--concurrency', type=int, default=1)
     parser.add_argument('--reuse-baselines-from', type=Path)
+    parser.add_argument('--reuse-after-step-retry-upgrade', action='store_true')
     args = parser.parse_args(argv)
     if args.concurrency < 1:
         parser.error('--concurrency must be positive')
@@ -504,7 +702,7 @@ def main(argv=None):
     result = run(args.config, output, environment, task_names=args.tasks, methods=args.methods,
                  prepare_only=args.prepare_only, resume=args.resume,
                  concurrency=args.concurrency, reuse_baselines_from=args.reuse_baselines_from,
-                 baseline_only=args.baseline_only)
+                 baseline_only=args.baseline_only, reuse_after_step_retry_upgrade=args.reuse_after_step_retry_upgrade)
     print(f'Status: {result["status"]}', flush=True)
     return 0 if result['status'] in {'prepared', 'completed'} else 2
 

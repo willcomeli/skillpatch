@@ -7,3 +7,6 @@
 [submodule "skillopt"]
 	path = method/skillopt
 	url = https://github.com/microsoft/SkillOpt.git
+[submodule "method/evoskill"]
+	path = method/evoskill
+	url = https://github.com/sentient-agi/EvoSkill.git

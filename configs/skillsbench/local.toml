@@ -1,6 +1,6 @@
 # Local SkillsBench v1.1; existing executor, native task budgets.
 tasks_dir = "../../../datasets/skillsbench/tasks"
-bench_command = ["/Users/willcomeli/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/bin/python3.12", "/Users/willcomeli/work/skillpatch/skillpatch/scripts/skillsbench/bench.py", "--install-proxy", "http://host.docker.internal:7897", "--uv-installer-github", "--install-timeout", "1800"]
+bench_command = ["/Users/willcomeli/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/bin/python3.12", "/Users/willcomeli/work/skillpatch/skillpatch/scripts/skillsbench/bench.py", "--install-proxy", "http://host.docker.internal:7897", "--uv-installer-github", "--install-timeout", "1800", "--step-retries"]
 expected_backend_version = "0.6.3"
 agent = "openhands"
 execution_model_env = "EXECUTION_MODEL"

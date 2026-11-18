@@ -1,0 +1,15 @@
+[
+  {
+    "id": "synthetic-adaptation-example",
+    "query": "Find an apple, wash it, and place it on the table.",
+    "execution_specification": "Synthetic example only. Available text actions: look, go to <location>, take <object> from <receptacle>, clean <object> with <sink>, put <object> in/on <receptacle>. Objects and locations must first be observed. No shell or browser is available.",
+    "retrieved_skills": [
+      {
+        "id": "clean-and-place",
+        "name": "Clean and place an object",
+        "description": "Find an object, clean it and move it to a destination.",
+        "text": "Locate the requested object. Take it, locate a sink, and clean it. Locate the destination and place the object there. Verify the final state from environment feedback."
+      }
+    ]
+  }
+]

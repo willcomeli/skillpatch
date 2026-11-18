@@ -75,7 +75,7 @@ class SharedExecutorBridge:
     def __init__(self, environment):
         self.environment = dict(environment)
 
-    def run(self, entry, skill_content, output, *, skill_dir=None):
+    def run(self, entry, skill_content, output, *, skill_dir=None, skill_pack=None):
         output = Path(output).resolve()
         output.mkdir(parents=True, exist_ok=False)
         config_path = Path(entry['config'])
@@ -85,21 +85,24 @@ class SharedExecutorBridge:
             from excutor.executor_adapter.registry import get_execution_adapter
             from excutor.excutor_runners.benchflow import BenchFlowBackend
             request, _ = load_config(config_path)
-            base = request.skills_dir or request.task_dir / 'environment/skills'
+            base = Path(skill_pack) if skill_pack is not None else (request.skills_dir or request.task_dir / 'environment/skills')
             pack = output / 'skills'
             shutil.copytree(base, pack)
-            target = _target(pack, entry.get('skill_target'))
-            if skill_dir is not None:
-                shutil.rmtree(target.parent)
-                shutil.copytree(skill_dir, target.parent)
-            else:
-                target.write_text(skill_content, encoding='utf-8')
+            if skill_pack is None:
+                target = _target(pack, entry.get('skill_target'))
+                if skill_dir is not None:
+                    shutil.rmtree(target.parent)
+                    shutil.copytree(skill_dir, target.parent)
+                else:
+                    target.write_text(skill_content, encoding='utf-8')
             request = replace(request, skills_dir=pack, skill_mode='with-skill')
             result = Executor(get_execution_adapter(benchmark), BenchFlowBackend()).run(
                 request, output / 'execution', self.environment)
             if result.status != 'completed':
                 raise ValueError(f'Shared execution failed: {result.status}; see {output / "execution/result.json"}')
             return output / 'execution'
+        if skill_pack is not None:
+            raise ValueError('Native Skill packs must be explicitly rendered as text before execution')
         from excutor.runner_common.launcher import run_native
         config = load_native_config(config_path, self.environment)
         if 'task_ref' not in entry:

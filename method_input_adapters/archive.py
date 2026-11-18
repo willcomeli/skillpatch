@@ -44,6 +44,35 @@ def _score(value):
     return float(value)
 
 
+def is_scored_agent_timeout(raw):
+    """A native agent deadline with valid verifier feedback is a scored run."""
+    if raw.get('benchmark') != 'skillsbench' or raw.get('status') != 'timeout':
+        return False
+    if (raw.get('execution') or {}).get('status') != 'timeout':
+        return False
+    errors = raw.get('errors') or []
+    if not errors or any(error.get('category') != 'agent' or
+                         error.get('code') not in {'timeout', 'agent_timeout_info'} for error in errors):
+        return False
+    deadlines = []
+    for error in errors:
+        if error.get('code') == 'agent_timeout_info':
+            try:
+                deadlines.append(json.loads(error['message']))
+            except (ValueError, KeyError, TypeError):
+                return False
+    if not any(isinstance(info, dict) and info.get('reason') == 'wall_clock_timeout' for info in deadlines):
+        return False
+    feedback = raw.get('feedback') or {}
+    if feedback.get('status') != 'scored' or feedback.get('issues'):
+        return False
+    try:
+        _score(feedback.get('metrics', {}).get('reward'))
+    except ValueError:
+        return False
+    return True
+
+
 def load_archive(source):
     source = Path(source).expanduser().resolve(strict=True)
     path = source / 'result.json' if source.is_dir() else source
@@ -55,7 +84,7 @@ def load_archive(source):
         # eligibility filter or its flattened text as an intermediate format.
         from method_input_adapters.skillpatch.adapter.skillsbench import SkillsBenchDiagnosisAdapter
         checked = SkillsBenchDiagnosisAdapter().build_diagnosis_context(source)
-        if raw.get('status') != 'completed' or raw.get('errors'):
+        if (raw.get('status') != 'completed' or raw.get('errors')) and not is_scored_agent_timeout(raw):
             raise ValueError('Execution did not complete successfully')
         feedback = raw.get('feedback') or {}
         if feedback.get('status') != 'scored' or feedback.get('issues'):
@@ -64,7 +93,7 @@ def load_archive(source):
         events_path = Path(raw['execution']['normalized_trajectory_path'])
         if not events_path.is_absolute():
             events_path = source / events_path
-        events = [json.loads(line)['event'] for line in events_path.read_text().splitlines() if line.strip()]
+        events = [json.loads(line)['event'] for line in events_path.read_text(encoding='utf-8').split('\n') if line.strip()]
         conversation = []
         for event in events:
             role = 'user' if event.get('type') == 'user_message' else 'assistant'

@@ -22,5 +22,17 @@
     "excluded_top_level": [],
     "files_copied": 51,
     "integration_status": "source_snapshot_only; native_execution_runners_migrated_separately"
+  },
+  "evoskill": {
+    "upstream": "https://github.com/sentient-agi/EvoSkill.git",
+    "commit": "36f6f04952293d7054145550c2b9f0b0411bff1c",
+    "import_mode": "git_submodule",
+    "integration_status": "input_and_execution_adapter_available; upstream_loop_integration_tested"
+  },
+  "skillaligner": {
+    "paper": "https://arxiv.org/html/2608.06880v1",
+    "import_mode": "independent_paper_reproduction",
+    "upstream": null,
+    "integration_status": "method_implementation_and_shared_execution_adapter; mock_tests_only"
   }
 }

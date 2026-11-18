@@ -134,7 +134,9 @@ def _text_file(path: Path, limitations: list[str], label: str) -> str | None:
 
 def _json_lines(path: Path, *, limitations: list[str] | None = None) -> dict[int, dict[str, Any]]:
     records = {}
-    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+    # JSON strings may legally contain U+0085/U+2028/U+2029. splitlines()
+    # treats those characters as record separators and corrupts valid JSONL.
+    for number, line in enumerate(path.read_text(encoding="utf-8").split("\n"), 1):
         if not line.strip():
             continue
         try:
